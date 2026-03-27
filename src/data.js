@@ -83,7 +83,7 @@ export const PLANET_THEMES = {
   }
 };
 
-// Draw decoration based on type
+// Draw decoration based on type — 2x scale for visibility
 export function drawDecoration(ctx, x, y, type, theme) {
   ctx.save();
   ctx.translate(x, y);
@@ -91,124 +91,259 @@ export function drawDecoration(ctx, x, y, type, theme) {
 
   switch (type) {
     case 'tree_small':
-      ctx.fillStyle = '#2a1a0a';
-      ctx.fillRect(-2, -4, 4, 10); // trunk
+      // Trunk
+      ctx.fillStyle = '#3a2a0a';
+      ctx.fillRect(-3, -4, 6, 16);
+      // Leaves (layered)
       ctx.fillStyle = c;
-      ctx.fillRect(-6, -10, 12, 8); // leaves
-      ctx.fillRect(-4, -14, 8, 5);
+      ctx.fillRect(-10, -14, 20, 12);
+      ctx.fillRect(-7, -20, 14, 8);
+      ctx.fillRect(-4, -24, 8, 5);
+      // Highlight
+      ctx.fillStyle = 'rgba(255,255,255,0.06)';
+      ctx.fillRect(-8, -14, 8, 10);
       break;
     case 'tree_big':
-      ctx.fillStyle = '#3a2a0a';
-      ctx.fillRect(-3, -6, 6, 14); // trunk
+      ctx.fillStyle = '#4a3010';
+      ctx.fillRect(-4, -8, 8, 22);
+      // Roots
+      ctx.fillStyle = '#3a2008';
+      ctx.fillRect(-8, 12, 4, 4);
+      ctx.fillRect(4, 12, 4, 4);
+      // Canopy
       ctx.fillStyle = c;
-      ctx.fillRect(-10, -16, 20, 12);
-      ctx.fillRect(-7, -22, 14, 8);
-      ctx.fillRect(-4, -26, 8, 5);
+      ctx.fillRect(-16, -24, 32, 18);
+      ctx.fillRect(-12, -32, 24, 10);
+      ctx.fillRect(-8, -36, 16, 6);
+      // Light patches
+      ctx.fillStyle = 'rgba(255,255,255,0.05)';
+      ctx.fillRect(-12, -28, 10, 8);
       break;
     case 'bush':
       ctx.fillStyle = c;
-      ctx.fillRect(-5, -4, 10, 6);
-      ctx.fillRect(-3, -7, 6, 4);
+      ctx.fillRect(-8, -6, 16, 10);
+      ctx.fillRect(-6, -10, 12, 5);
+      // Berries
+      ctx.fillStyle = '#f44';
+      ctx.fillRect(-4, -4, 2, 2);
+      ctx.fillRect(2, -6, 2, 2);
       break;
     case 'mushroom':
-      ctx.fillStyle = '#4a2a4a';
-      ctx.fillRect(-1, -2, 2, 6);
-      ctx.fillStyle = '#8a3a3a';
-      ctx.fillRect(-4, -5, 8, 4);
+      ctx.fillStyle = '#5a3a5a';
+      ctx.fillRect(-2, -2, 4, 10);
+      ctx.fillStyle = '#aa4a4a';
+      ctx.fillRect(-8, -8, 16, 8);
+      ctx.fillStyle = '#cc6666';
+      ctx.fillRect(-6, -10, 12, 3);
+      // Spots
+      ctx.fillStyle = '#ffaaaa';
+      ctx.fillRect(-5, -6, 2, 2);
+      ctx.fillRect(1, -8, 2, 2);
+      ctx.fillRect(3, -5, 2, 2);
       break;
     case 'cactus':
-      ctx.fillStyle = '#2a5a2a';
-      ctx.fillRect(-2, -10, 4, 16);
-      ctx.fillRect(-6, -6, 4, 3);
-      ctx.fillRect(2, -8, 4, 3);
+      ctx.fillStyle = '#2a6a2a';
+      ctx.fillRect(-3, -18, 6, 28);
+      // Arms
+      ctx.fillRect(-9, -10, 6, 4);
+      ctx.fillRect(-9, -10, 4, 8);
+      ctx.fillRect(3, -14, 6, 4);
+      ctx.fillRect(5, -14, 4, 10);
+      // Spikes
+      ctx.fillStyle = '#aaa';
+      ctx.fillRect(-1, -20, 2, 3);
+      ctx.fillRect(-4, -8, 1, 2);
+      ctx.fillRect(3, -12, 1, 2);
       break;
     case 'rock_desert':
       ctx.fillStyle = theme.obstacles[0];
-      ctx.fillRect(-5, -3, 10, 6);
-      ctx.fillRect(-3, -5, 6, 3);
+      ctx.fillRect(-8, -4, 16, 10);
+      ctx.fillRect(-6, -8, 12, 5);
+      ctx.fillStyle = 'rgba(255,255,255,0.04)';
+      ctx.fillRect(-6, -8, 6, 4);
       break;
     case 'bones':
-      ctx.fillStyle = '#aaa';
-      ctx.fillRect(-4, -1, 8, 2);
-      ctx.fillRect(-1, -3, 2, 6);
+      ctx.fillStyle = '#bbb';
+      ctx.fillRect(-6, -1, 12, 3);
+      ctx.fillRect(-2, -4, 3, 8);
+      // Skull
+      ctx.fillStyle = '#ccc';
+      ctx.fillRect(-4, -8, 6, 5);
+      ctx.fillStyle = '#333';
+      ctx.fillRect(-3, -6, 2, 2);
+      ctx.fillRect(0, -6, 2, 2);
       break;
     case 'ice_crystal':
-      ctx.fillStyle = '#8af';
-      ctx.beginPath();
-      ctx.moveTo(0, -10);
-      ctx.lineTo(-5, 0);
-      ctx.lineTo(0, 4);
-      ctx.lineTo(5, 0);
-      ctx.closePath();
-      ctx.fill();
+      ctx.fillStyle = '#6af';
+      ctx.shadowColor = '#6af';
+      ctx.shadowBlur = 4;
+      ctx.fillRect(-3, -18, 6, 22);
+      ctx.fillRect(-2, -22, 4, 5);
+      ctx.fillStyle = '#8cf';
+      ctx.fillRect(-1, -18, 2, 16);
+      ctx.shadowBlur = 0;
       break;
     case 'snow_pile':
       ctx.fillStyle = '#cce';
-      ctx.fillRect(-6, -2, 12, 4);
-      ctx.fillRect(-4, -4, 8, 3);
+      ctx.fillRect(-10, -3, 20, 6);
+      ctx.fillRect(-7, -7, 14, 5);
+      ctx.fillStyle = '#ddf';
+      ctx.fillRect(-5, -7, 8, 3);
+      break;
+    case 'frozen_tree':
+      ctx.fillStyle = '#4a5a6a';
+      ctx.fillRect(-3, -6, 6, 18);
+      ctx.fillStyle = '#6a8aaa';
+      ctx.fillRect(-10, -14, 20, 10);
+      ctx.fillRect(-6, -20, 12, 7);
+      // Ice particles
+      ctx.fillStyle = '#8cf';
+      ctx.fillRect(-8, -12, 2, 2);
+      ctx.fillRect(5, -16, 2, 2);
       break;
     case 'crystal_small':
       ctx.fillStyle = '#a0f';
-      ctx.fillRect(-2, -8, 4, 10);
-      ctx.fillRect(-1, -10, 2, 3);
+      ctx.shadowColor = '#a0f';
+      ctx.shadowBlur = 3;
+      ctx.fillRect(-3, -14, 6, 18);
+      ctx.fillRect(-2, -18, 4, 5);
+      ctx.shadowBlur = 0;
       break;
     case 'crystal_big':
       ctx.fillStyle = '#c0f';
-      ctx.fillRect(-3, -14, 6, 16);
-      ctx.fillRect(-2, -18, 4, 5);
+      ctx.shadowColor = '#c0f';
+      ctx.shadowBlur = 5;
+      ctx.fillRect(-5, -22, 10, 28);
+      ctx.fillRect(-3, -28, 6, 8);
       ctx.fillStyle = '#80a';
-      ctx.fillRect(-1, -14, 2, 12);
+      ctx.fillRect(-2, -22, 4, 20);
+      ctx.shadowBlur = 0;
       break;
     case 'crystal_cluster':
       ctx.fillStyle = '#a0f';
-      ctx.fillRect(-5, -6, 3, 8);
-      ctx.fillRect(-1, -10, 3, 12);
-      ctx.fillRect(3, -4, 3, 6);
+      ctx.fillRect(-8, -10, 4, 14);
+      ctx.fillRect(-2, -16, 5, 20);
+      ctx.fillRect(5, -6, 4, 10);
+      ctx.fillStyle = '#c0f';
+      ctx.fillRect(-1, -18, 3, 5);
       break;
     case 'lava_pool':
       ctx.fillStyle = '#f40';
-      ctx.globalAlpha = 0.6 + Math.sin(Date.now() / 300) * 0.2;
-      ctx.fillRect(-6, -3, 12, 6);
+      ctx.globalAlpha = 0.5 + Math.sin(Date.now() / 300) * 0.2;
+      ctx.fillRect(-10, -5, 20, 10);
       ctx.fillStyle = '#ff0';
-      ctx.globalAlpha = 0.4;
-      ctx.fillRect(-3, -1, 6, 2);
+      ctx.globalAlpha = 0.3;
+      ctx.fillRect(-6, -2, 12, 4);
+      // Bubbles
+      ctx.fillStyle = '#f80';
+      ctx.globalAlpha = 0.6;
+      ctx.fillRect(-4 + Math.sin(Date.now() / 200) * 3, -3, 2, 2);
       break;
     case 'charred_tree':
       ctx.fillStyle = '#1a1a1a';
-      ctx.fillRect(-2, -8, 4, 12);
-      ctx.fillRect(-5, -10, 3, 3);
-      ctx.fillRect(2, -12, 3, 4);
+      ctx.fillRect(-3, -14, 6, 22);
+      ctx.fillRect(-8, -16, 4, 4);
+      ctx.fillRect(4, -20, 4, 6);
+      // Embers
+      ctx.fillStyle = '#f80';
+      ctx.globalAlpha = 0.3 + Math.sin(Date.now() / 400) * 0.2;
+      ctx.fillRect(-2, -6, 2, 2);
+      ctx.fillRect(1, -10, 2, 2);
+      break;
+    case 'volcano_vent':
+      ctx.fillStyle = '#2a1a0a';
+      ctx.fillRect(-6, -4, 12, 8);
+      ctx.fillStyle = '#f40';
+      ctx.globalAlpha = 0.4 + Math.sin(Date.now() / 200) * 0.3;
+      ctx.fillRect(-3, -6, 6, 4);
+      ctx.fillStyle = '#ff0';
+      ctx.globalAlpha = 0.2;
+      ctx.fillRect(-1, -10 - Math.random() * 4, 2, 6);
       break;
     case 'pillar':
       ctx.fillStyle = '#3a3a4a';
-      ctx.fillRect(-4, -16, 8, 20);
+      ctx.fillRect(-6, -26, 12, 32);
       ctx.fillStyle = '#4a4a5a';
-      ctx.fillRect(-5, -18, 10, 3);
-      ctx.fillRect(-5, 2, 10, 3);
+      ctx.fillRect(-8, -28, 16, 4);
+      ctx.fillRect(-8, 4, 16, 4);
+      // Cracks
+      ctx.fillStyle = '#2a2a3a';
+      ctx.fillRect(-4, -16, 1, 8);
       break;
     case 'broken_wall':
       ctx.fillStyle = '#2a2a3a';
-      ctx.fillRect(-8, -6, 16, 8);
-      ctx.fillRect(-6, -10, 4, 5);
-      ctx.fillRect(2, -8, 5, 3);
+      ctx.fillRect(-12, -8, 24, 14);
+      ctx.fillRect(-8, -14, 6, 7);
+      ctx.fillRect(4, -12, 6, 5);
+      // Rubble
+      ctx.fillStyle = '#3a3a4a';
+      ctx.fillRect(-10, 4, 4, 3);
+      ctx.fillRect(2, 5, 5, 3);
       break;
     case 'terminal':
       ctx.fillStyle = '#1a2a2a';
-      ctx.fillRect(-4, -6, 8, 8);
+      ctx.fillRect(-6, -10, 12, 14);
       ctx.fillStyle = '#0a4';
-      ctx.globalAlpha = 0.5 + Math.sin(Date.now() / 500) * 0.3;
-      ctx.fillRect(-3, -5, 6, 4);
+      ctx.globalAlpha = 0.4 + Math.sin(Date.now() / 500) * 0.3;
+      ctx.fillRect(-5, -8, 10, 6);
+      // Text on screen
+      ctx.fillStyle = '#0f0';
+      ctx.globalAlpha = 0.6;
+      ctx.fillRect(-4, -7, 6, 1);
+      ctx.fillRect(-4, -5, 8, 1);
+      ctx.fillRect(-4, -3, 4, 1);
+      break;
+    case 'debris':
+      ctx.fillStyle = '#3a3a4a';
+      ctx.fillRect(-5, -2, 10, 5);
+      ctx.fillRect(-8, -1, 4, 3);
+      ctx.fillStyle = '#2a2a3a';
+      ctx.fillRect(3, -3, 4, 4);
       break;
     case 'console':
       ctx.fillStyle = '#1a1a2a';
-      ctx.fillRect(-5, -4, 10, 6);
+      ctx.fillRect(-8, -6, 16, 10);
       ctx.fillStyle = '#0af';
-      ctx.globalAlpha = 0.6;
-      ctx.fillRect(-4, -3, 8, 3);
+      ctx.globalAlpha = 0.5 + Math.sin(Date.now() / 400) * 0.2;
+      ctx.fillRect(-6, -4, 12, 5);
+      // Buttons
+      ctx.fillStyle = '#0f0';
+      ctx.globalAlpha = 0.7;
+      ctx.fillRect(-5, 2, 2, 2);
+      ctx.fillStyle = '#f00';
+      ctx.fillRect(3, 2, 2, 2);
+      break;
+    case 'crate_metal':
+      ctx.fillStyle = '#2a3a3a';
+      ctx.fillRect(-7, -7, 14, 14);
+      ctx.strokeStyle = '#4a5a5a';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(-7, -7, 14, 14);
+      ctx.fillStyle = '#3a4a4a';
+      ctx.fillRect(-5, -1, 10, 2);
+      break;
+    case 'wire':
+      ctx.strokeStyle = '#444';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(-8, 0);
+      ctx.quadraticCurveTo(0, 8, 8, -2);
+      ctx.stroke();
+      // Spark
+      ctx.fillStyle = '#ff0';
+      ctx.globalAlpha = Math.random() > 0.7 ? 0.8 : 0;
+      ctx.fillRect(7, -3, 2, 2);
+      break;
+    case 'light_panel':
+      ctx.fillStyle = '#1a1a2a';
+      ctx.fillRect(-4, -4, 8, 8);
+      ctx.fillStyle = '#0af';
+      ctx.globalAlpha = 0.3 + Math.sin(Date.now() / 600 + x) * 0.2;
+      ctx.fillRect(-3, -3, 6, 6);
       break;
     default:
       ctx.fillStyle = c;
-      ctx.fillRect(-3, -3, 6, 6);
+      ctx.fillRect(-4, -4, 8, 8);
   }
 
   ctx.restore();

@@ -16,7 +16,7 @@ import { MISSIONS, PLANET_THEMES, drawDecoration, TRUE_PHRASES, FAKE_PHRASES,
   getMissionPhrase, getMissionData, BOSS_DIALOGUES, COMMANDER_LINES,
   ENEMY_TYPES } from './src/data.js';
 import { drawPlayer, drawPlayerWeapon, drawEnemy, drawBoss, drawShip,
-  drawSpaceEnemy, drawHQPlayer, drawDefeatedBoss } from './src/sprites.js';
+  drawSpaceEnemy, drawHQPlayer, drawDefeatedBoss, drawCommander } from './src/sprites.js';
 import { updateGlitches, renderGlitchEffects, triggerGlitch, isControlsInverted,
   activeGlitch } from './src/glitch.js';
 import { TypeWriter } from './src/typewriter.js';
@@ -323,6 +323,14 @@ function updateHQ(dt) {
       ctx.fillRect(o.x - 2, o.y - 2, o.w + 4, o.h + 4);
       ctx.restore();
     }
+    // Draw commander as pixel character instead of box
+    if (k === 'commander') {
+      ctx.save();
+      ctx.translate(o.x + o.w / 2, o.y + o.h / 2);
+      drawCommander(ctx, gameTime);
+      ctx.restore();
+    }
+
     ctx.fillStyle = o.color;
     ctx.font = '9px "Share Tech Mono", monospace';
     ctx.textAlign = 'center';
@@ -451,7 +459,7 @@ let ship = {};
 function shipInit() {
   ship = {
     x: 400, y: 500, hp: save.shipMaxHP, maxHP: save.shipMaxHP,
-    bullets: [], enemies: [], timer: 0, maxTime: 20,
+    bullets: [], enemies: [], enemyBullets: [], timer: 0, maxTime: 20,
     spawnTimer: 0, lastShot: 0, alive: true,
     speed: save.shipSpeed + 1, damage: save.shipDamage,
     bulletCount: save.shipBulletsLevel
@@ -500,22 +508,60 @@ function updateShipGame(dt) {
     ship.spawnTimer = Math.max(0.3, 1.4 - diff * 0.1);
   }
 
-  // Update enemies
+  // Update enemies (with AI and shooting)
   for (let i = ship.enemies.length - 1; i >= 0; i--) {
     const e = ship.enemies[i];
-    e.y += e.speed;
-    if (e.type === 'fast') { e.zigzag += dt * 5; e.x += Math.sin(e.zigzag) * 2; }
+    if (!e.lastShot) e.lastShot = 0;
+    e.lastShot += dt * 1000;
+
+    // Movement AI per type
+    if (e.type === 'basic') {
+      e.y += e.speed;
+      // Strafe toward player slightly
+      const dx = ship.x - e.x;
+      e.x += Math.sign(dx) * 0.4;
+      // Shoot at player
+      if (e.lastShot > 2000 && e.y > 50 && e.y < 500) {
+        e.lastShot = 0;
+        const angle = Math.atan2(ship.y - e.y, ship.x - e.x);
+        ship.enemyBullets.push({ x: e.x, y: e.y, dx: Math.cos(angle) * 3, dy: Math.sin(angle) * 3, life: 3 });
+        Particles.muzzleFlash(e.x, e.y + 8, Math.PI / 2);
+      }
+    } else if (e.type === 'fast') {
+      e.zigzag += dt * 6;
+      e.y += e.speed;
+      e.x += Math.sin(e.zigzag) * 3;
+      // Fast enemies dive toward player when close
+      if (Math.abs(e.x - ship.x) < 100 && e.y < ship.y) {
+        e.y += e.speed * 1.5;
+      }
+    } else if (e.type === 'heavy') {
+      e.y += e.speed;
+      // Heavy enemies stop and shoot when in range
+      if (e.y > 100 && e.y < 350) {
+        e.y -= e.speed * 0.5; // slow down
+        // Double shot
+        if (e.lastShot > 1500) {
+          e.lastShot = 0;
+          const angle = Math.atan2(ship.y - e.y, ship.x - e.x);
+          ship.enemyBullets.push({ x: e.x - 8, y: e.y + 6, dx: Math.cos(angle) * 2.5, dy: Math.sin(angle) * 2.5, life: 3.5 });
+          ship.enemyBullets.push({ x: e.x + 8, y: e.y + 6, dx: Math.cos(angle) * 2.5, dy: Math.sin(angle) * 2.5, life: 3.5 });
+        }
+      }
+    }
 
     // Bullet hit
     for (let j = ship.bullets.length - 1; j >= 0; j--) {
-      if (Math.hypot(ship.bullets[j].x - e.x, ship.bullets[j].y - e.y) < 14) {
+      if (Math.hypot(ship.bullets[j].x - e.x, ship.bullets[j].y - e.y) < 16) {
         e.hp -= ship.damage;
         Particles.impact(e.x, e.y, Math.PI / 2);
+        Particles.damageNumber(e.x, e.y - 10, ship.damage, '#ff0');
         ship.bullets.splice(j, 1);
         if (e.hp <= 0) {
-          Particles.explosion(e.x, e.y, 0.6);
+          Particles.explosion(e.x, e.y, e.type === 'heavy' ? 1.2 : 0.7);
           ship.enemies.splice(i, 1);
           playSound('explosion');
+          camera.shake(e.type === 'heavy' ? 4 : 2, 0.1);
         } else { playSound('hit'); }
         break;
       }
@@ -523,20 +569,36 @@ function updateShipGame(dt) {
     if (!ship.enemies[i]) continue;
 
     // Collision with ship
-    if (e.y > 0 && Math.hypot(e.x - ship.x, e.y - ship.y) < 18) {
-      ship.hp -= 15;
+    if (e.y > 0 && Math.hypot(e.x - ship.x, e.y - ship.y) < 20) {
+      ship.hp -= e.type === 'heavy' ? 25 : 15;
       Particles.hitEffect(ship.x, ship.y, '#0ff');
-      camera.shake(4, 0.15);
+      Particles.explosion(e.x, e.y, 0.5);
+      camera.shake(5, 0.15);
       ship.enemies.splice(i, 1);
       playSound('hit');
       if (ship.hp <= 0) { ship.alive = false; playSound('death'); Particles.explosion(ship.x, ship.y, 2); }
       continue;
     }
-    if (e.y > 620) ship.enemies.splice(i, 1);
+    if (e.y > 640) ship.enemies.splice(i, 1);
+  }
+
+  // Update enemy bullets
+  for (let i = (ship.enemyBullets || []).length - 1; i >= 0; i--) {
+    const b = ship.enemyBullets[i];
+    b.x += b.dx; b.y += b.dy; b.life -= dt;
+    if (b.life <= 0 || b.y > 620 || b.y < -10) { ship.enemyBullets.splice(i, 1); continue; }
+    if (Math.hypot(b.x - ship.x, b.y - ship.y) < 14) {
+      ship.hp -= 10;
+      Particles.hitEffect(ship.x, ship.y, '#0ff');
+      camera.shake(3, 0.1);
+      ship.enemyBullets.splice(i, 1);
+      playSound('hit');
+      if (ship.hp <= 0) { ship.alive = false; playSound('death'); Particles.explosion(ship.x, ship.y, 2); }
+    }
   }
 
   // Engine trail
-  Particles.engineTrail(ship.x, ship.y + 10, -Math.PI / 2);
+  Particles.engineTrail(ship.x, ship.y + 12, -Math.PI / 2);
 
   ship.timer += dt;
   if (ship.timer >= ship.maxTime) { landingInit(); state = STATES.LANDING; }
@@ -560,9 +622,24 @@ function updateShipGame(dt) {
   for (const b of ship.bullets) { ctx.fillRect(b.x - 1, b.y - 3, 2, 6); }
 
   // Enemies
-  for (const e of ship.enemies) { ctx.save(); ctx.translate(e.x, e.y); drawSpaceEnemy(ctx, e.type, gameTime); ctx.restore(); }
+  for (const e of ship.enemies) {
+    ctx.save(); ctx.translate(e.x, e.y); drawSpaceEnemy(ctx, e.type, gameTime); ctx.restore();
+    // HP bar for heavy enemies
+    if (e.type === 'heavy' && e.hp < 30) drawHPBar(ctx, e.x - 12, e.y - 18, 24, 3, e.hp, 30, '#f44');
+  }
+
+  // Enemy bullets
+  ctx.fillStyle = '#f44';
+  for (const b of (ship.enemyBullets || [])) {
+    ctx.fillRect(b.x - 2, b.y - 2, 4, 4);
+    // Trail
+    ctx.globalAlpha = 0.3;
+    ctx.fillRect(b.x - b.dx - 1, b.y - b.dy - 1, 2, 2);
+    ctx.globalAlpha = 1;
+  }
 
   Particles.renderParticles(ctx);
+  Particles.renderDamageNumbers(ctx);
 
   // UI
   drawHPBar(ctx, 15, 12, 140, 12, ship.hp, ship.maxHP, '#0f0');
