@@ -91,7 +91,7 @@ export function updateBaseLevel() {
 export const WEAPONS = {
   pistol: { name: 'Пістолет', damage: 10, fireRate: 350, range: 280, type: 'ranged', bulletSpeed: 7, bulletCount: 1 },
   sword: { name: 'Меч', damage: 25, fireRate: 500, range: 45, type: 'melee', bulletSpeed: 0, bulletCount: 0 },
-  machinegun: { name: 'Кулемет', damage: 4, fireRate: 80, range: 220, type: 'ranged', bulletSpeed: 8, bulletCount: 1 },
+  machinegun: { name: 'Кулемет', damage: 4, fireRate: 90, range: 220, type: 'ranged', bulletSpeed: 8, bulletCount: 1, overheat: true, maxHeat: 100, heatPerShot: 6, coolRate: 30 },
   sniper: { name: 'Снайперка', damage: 45, fireRate: 1100, range: 450, type: 'ranged', bulletSpeed: 12, bulletCount: 1 }
 };
 

@@ -360,7 +360,7 @@ function runShip(dt) {
 
   // Shoot
   sh.ls += dt * 1000;
-  if ((keys['Space']||mDown) && sh.ls > 160) {
+  if ((keys['Space']||mDown) && sh.ls > 350) {
     sh.ls = 0;
     for (let i = 0; i < sh.bc; i++) sh.bul.push({ x: sh.x + (i - (sh.bc - 1) / 2) * 12, y: sh.y - 18, s: 10 });
     playSound('shoot_pistol'); FX.muzzleFlash(sh.x, sh.y - 20, -Math.PI / 2);
@@ -617,11 +617,29 @@ function runHunt(dt) {
   // Aim
   const aa = aimAngle(p.x, p.y);
 
-  // Shoot
+  // Overheat system
+  if (!H.heat) H.heat = 0;
+  if (!H.overheated) H.overheated = false;
   const wpn = save.weapons[save.activeWeapon], wd = WEAPONS[wpn.type];
+
+  // Cool down
+  if (wd.overheat) {
+    H.heat = Math.max(0, H.heat - (wd.coolRate || 30) * dt);
+    if (H.overheated && H.heat <= 0) H.overheated = false;
+  } else {
+    H.heat = 0; H.overheated = false;
+  }
+
+  // Shoot
   p.ls += dtm;
-  if ((mDown || keys['Space']) && p.ls > wd.fireRate) {
+  const canShoot = !H.overheated && p.ls > wd.fireRate;
+  if ((mDown || keys['Space']) && canShoot) {
     p.ls = 0;
+    // Overheat
+    if (wd.overheat) {
+      H.heat += wd.heatPerShot || 6;
+      if (H.heat >= (wd.maxHeat || 100)) { H.overheated = true; playSound('glitch'); }
+    }
     if (wd.type === 'ranged') {
       H.bul.push({ x: p.x + Math.cos(aa) * 14, y: p.y + Math.sin(aa) * 14,
         dx: Math.cos(aa) * wd.bulletSpeed, dy: Math.sin(aa) * wd.bulletSpeed,
@@ -631,7 +649,8 @@ function runHunt(dt) {
       playSound('shoot_' + wpn.type);
     } else {
       const d = getWeaponDamage(wpn.type, wpn.level);
-      const all = [...H.en.filter(e => e.alive), H.boss].filter(e => e?.alive);
+      const meleeMinions = H.en.some(e => e.alive);
+      const all = [...H.en.filter(e => e.alive), ...(meleeMinions ? [] : [H.boss])].filter(e => e?.alive);
       for (const e of all) {
         if (Math.hypot(e.x - p.x, e.y - p.y) < wd.range + 16) {
           e.hp -= d; FX.hitSpark(e.x, e.y, e === H.boss ? '#f44' : e.c); FX.damageNumber(e.x, e.y - 16, d, '#ff0', true);
@@ -677,7 +696,8 @@ function runHunt(dt) {
     if (b.tr > (b.mr || 400) || b.x < 0 || b.x > H.mw || b.y < 0 || b.y > H.mh) { H.bul.splice(i, 1); continue; }
 
     const targets = [...H.en.filter(e => e.alive)];
-    if (H.boss?.alive && !H.boss.sh) targets.push(H.boss);
+    const minionsAlive = H.en.some(e => e.alive);
+    if (H.boss?.alive && !H.boss.sh && !minionsAlive) targets.push(H.boss);
     for (const e of targets) {
       const hr = e === H.boss ? 20 : 14;
       if (Math.hypot(b.x - e.x, b.y - e.y) < hr) {
@@ -869,9 +889,14 @@ function renderHunt() {
     drawBoss(ctx, gt, b.ab, b.sh, b.inv);
     ctx.restore();
     if (!b.inv || Math.floor(gt * 8) % 3 === 0) {
-      UI.hpBar(ctx, b.x - 32, b.y - 52, 64, 6, b.hp, b.mhp, '#f00');
+      const bossShielded = H.en.some(e => e.alive);
+      UI.hpBar(ctx, b.x - 32, b.y - 52, 64, 6, b.hp, b.mhp, bossShielded ? '#555' : '#f00');
       ctx.fillStyle = '#f88'; ctx.font = '8px "Orbitron", sans-serif'; ctx.textAlign = 'center';
       ctx.fillText('WARDEN XAR\'VOTH', b.x, b.y - 58);
+      if (bossShielded) {
+        ctx.fillStyle = '#f80'; ctx.font = '7px "Share Tech Mono", monospace';
+        ctx.fillText('⚠ ЗАХИЩЕНИЙ ПІДЛЕГЛИМИ', b.x, b.y - 65);
+      }
     }
   }
 
@@ -911,7 +936,13 @@ function renderHunt() {
   ctx.fillStyle = '#aaa'; ctx.font = '10px "Share Tech Mono", monospace'; ctx.textAlign = 'left';
   ctx.fillText(`${Math.ceil(p.hp)}/${p.mhp}`, 10, 34);
   ctx.fillStyle = '#0ff'; ctx.fillText(`${wd.name} Lv.${wpn.level}`, 10, 48);
-  ctx.fillStyle = '#ff0'; ctx.fillText(`${save.credits} cr`, 10, 62);
+  // Overheat bar
+  if (wd.overheat) {
+    const heatRatio = H.heat / (wd.maxHeat || 100);
+    UI.hpBar(ctx, 10, 52, 80, 6, H.heat, wd.maxHeat || 100, H.overheated ? '#f00' : '#f80');
+    if (H.overheated) { ctx.fillStyle = '#f44'; ctx.font = '9px "Share Tech Mono", monospace'; ctx.fillText('ПЕРЕГРІВ!', 95, 58); }
+  }
+  ctx.fillStyle = '#ff0'; ctx.fillText(`${save.credits} cr`, 10, wd.overheat ? 72 : 62);
   if (save.abilities[wpn.type]) {
     ctx.fillStyle = H.acd > 0 ? '#555' : '#0f0';
     ctx.fillText(H.acd > 0 ? `Q: ${Math.ceil(H.acd / 1000)}с` : 'Q: готово', 10, 76);
@@ -1048,20 +1079,20 @@ function runShop(dt) {
   };
 
   if (shopCat === 'hangar') {
-    si('HP корабля', save.shipHPLevel, 5, [150,300,500,750], () => { save.shipMaxHP += 20; save.shipHPLevel++; });
-    si('Швидкість кор.', save.shipSpeedLevel, 5, [200,350,550,800], () => { save.shipSpeed += 0.5; save.shipSpeedLevel++; });
-    si('Гармати', save.shipDamageLevel, 5, [200,350,550,800], () => { save.shipDamage += 5; save.shipDamageLevel++; });
-    si('Кулі кор.', save.shipBulletsLevel, 3, [400,700], () => { save.shipBulletsLevel++; });
+    si('HP корабля', save.shipHPLevel, 5, [200,450,750,1100], () => { save.shipMaxHP += 20; save.shipHPLevel++; });
+    si('Швидкість кор.', save.shipSpeedLevel, 5, [250,500,800,1200], () => { save.shipSpeed += 0.5; save.shipSpeedLevel++; });
+    si('Гармати', save.shipDamageLevel, 5, [250,500,800,1200], () => { save.shipDamage += 5; save.shipDamageLevel++; });
+    si('Кулі кор.', save.shipBulletsLevel, 3, [500,900], () => { save.shipBulletsLevel++; });
     y += 8;
-    si('HP гравця', save.hpLevel, 5, [200,350,550,800], () => { save.playerMaxHP += 25; save.hpLevel++; });
-    si('Швидкість', save.speedLevel, 5, [250,400,600,900], () => { save.playerSpeed += 0.5; save.speedLevel++; });
+    si('HP гравця', save.hpLevel, 5, [250,500,800,1200], () => { save.playerMaxHP += 25; save.hpLevel++; });
+    si('Швидкість', save.speedLevel, 5, [300,600,900,1400], () => { save.playerSpeed += 0.5; save.speedLevel++; });
   } else if (shopCat === 'arsenal') {
     ctx.fillStyle = '#777'; ctx.font = '12px "Share Tech Mono", monospace'; ctx.textAlign = 'left'; ctx.fillText('Зброя (макс 2):', 45, y); y += 22;
-    for (const [t, pr] of [['sword',500],['machinegun',800],['sniper',1200]]) {
+    for (const [t, pr] of [['sword',600],['machinegun',900],['sniper',1500]]) {
       const own = save.weapons.find(w => w.type === t);
       ctx.fillStyle = '#0cc'; ctx.fillText(`${WEAPONS[t].name} — ${pr} cr`, 55, y);
       if (own) { ctx.fillStyle = '#0f0'; ctx.fillText(`Є Lv.${own.level}`, 340, y);
-        if (own.level < 5) { const uc = [300,500,800,1200][own.level-1]; btn(470, y - 12, 105, 20, `Lv.${own.level+1} ${uc}`);
+        if (own.level < 5) { const uc = [400,700,1100,1600][own.level-1]; btn(470, y - 12, 105, 20, `Lv.${own.level+1} ${uc}`);
           if (btnClick(470, y - 12, 105, 20) && save.credits >= uc) { save.credits -= uc; own.level++; playSound('click'); saveToDisk(); } }
         if (save.weapons.length > 1) { btn(590, y - 12, 85, 20, `Продати`);
           if (btnClick(590, y - 12, 85, 20)) { save.credits += Math.floor(pr/2); save.weapons = save.weapons.filter(w => w.type !== t);
@@ -1071,7 +1102,7 @@ function runShop(dt) {
       y += 30;
     }
     const pist = save.weapons.find(w => w.type === 'pistol');
-    if (pist && pist.level < 5) { y += 8; const uc = [300,500,800,1200][pist.level-1];
+    if (pist && pist.level < 5) { y += 8; const uc = [400,700,1100,1600][pist.level-1];
       ctx.fillStyle = '#0cc'; ctx.fillText(`Пістолет Lv.${pist.level}`, 55, y);
       btn(470, y - 12, 115, 20, `Lv.${pist.level+1} ${uc}`);
       if (btnClick(470, y - 12, 115, 20) && save.credits >= uc) { save.credits -= uc; pist.level++; playSound('click'); saveToDisk(); } }

@@ -4,16 +4,16 @@
 
 // Missions
 export const MISSIONS = [
-  { name: 'Тінь на Кеплері', enemies: 2, bossHP: 80, reward: 150, bossAbility: null, planet: 'forest' },
-  { name: 'Втікач зі Станції', enemies: 3, bossHP: 120, reward: 200, bossAbility: null, planet: 'station' },
-  { name: 'Привид Андромеди', enemies: 3, bossHP: 160, reward: 300, bossAbility: null, planet: 'ice' },
-  { name: 'Протокол Омега', enemies: 4, bossHP: 200, reward: 400, bossAbility: 'teleport', planet: 'desert' },
-  { name: 'Сигнал з Оріона', enemies: 4, bossHP: 220, reward: 450, bossAbility: 'shield', planet: 'crystal' },
-  { name: 'Мертва Зона', enemies: 4, bossHP: 240, reward: 500, bossAbility: 'summon', planet: 'ruins' },
-  { name: 'Тіні Юпітера', enemies: 5, bossHP: 280, reward: 600, bossAbility: 'invisible', planet: 'volcanic' },
-  { name: 'Протокол Ехо', enemies: 5, bossHP: 320, reward: 700, bossAbility: 'reflect', planet: 'forest' },
-  { name: 'Чорний Маяк', enemies: 5, bossHP: 360, reward: 800, bossAbility: 'glitchfield', planet: 'ice' },
-  { name: 'Останній Сигнал', enemies: 6, bossHP: 400, reward: 1000, bossAbility: 'all', planet: 'ruins' }
+  { name: 'Тінь на Кеплері', enemies: 2, bossHP: 80, reward: 80, bossAbility: null, planet: 'forest' },
+  { name: 'Втікач зі Станції', enemies: 3, bossHP: 120, reward: 120, bossAbility: null, planet: 'station' },
+  { name: 'Привид Андромеди', enemies: 3, bossHP: 160, reward: 160, bossAbility: null, planet: 'ice' },
+  { name: 'Протокол Омега', enemies: 4, bossHP: 200, reward: 220, bossAbility: 'teleport', planet: 'desert' },
+  { name: 'Сигнал з Оріона', enemies: 4, bossHP: 220, reward: 260, bossAbility: 'shield', planet: 'crystal' },
+  { name: 'Мертва Зона', enemies: 4, bossHP: 240, reward: 300, bossAbility: 'summon', planet: 'ruins' },
+  { name: 'Тіні Юпітера', enemies: 5, bossHP: 280, reward: 350, bossAbility: 'invisible', planet: 'volcanic' },
+  { name: 'Протокол Ехо', enemies: 5, bossHP: 320, reward: 400, bossAbility: 'reflect', planet: 'forest' },
+  { name: 'Чорний Маяк', enemies: 5, bossHP: 360, reward: 480, bossAbility: 'glitchfield', planet: 'ice' },
+  { name: 'Останній Сигнал', enemies: 6, bossHP: 400, reward: 600, bossAbility: 'all', planet: 'ruins' }
 ];
 
 // Planet visual themes
@@ -378,7 +378,7 @@ export function getMissionData(missionNum) {
     name: generatePlanetName(),
     enemies: Math.min(3 + Math.floor(difficulty / 3), 8),
     bossHP: 200 + difficulty * 30,
-    reward: 500 + Math.floor(Math.random() * 1000),
+    reward: 250 + Math.floor(Math.random() * 400),
     bossAbility: ['teleport', 'shield', 'summon', 'invisible'][Math.floor(Math.random() * 4)],
     planet: planets[Math.floor(Math.random() * planets.length)]
   };
