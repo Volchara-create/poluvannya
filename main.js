@@ -1320,15 +1320,47 @@ function renderHuntScene() {
   drawPlayerWeapon(ctx, aimAngle, save.weapons[save.activeWeapon].type);
   ctx.restore();
 
-  // Bullets
+  // Player bullets (weapon-colored)
+  const wpnType = save.weapons[save.activeWeapon].type;
   for (const b of hunt.bullets) {
-    if (b.isGrenade) { ctx.fillStyle = '#f80'; ctx.beginPath(); ctx.arc(b.x, b.y, 4, 0, Math.PI * 2); ctx.fill(); }
-    else if (b.isSleep) { ctx.fillStyle = '#a0f'; ctx.fillRect(b.x - 2, b.y - 2, 4, 4); }
-    else { ctx.fillStyle = '#ff0'; ctx.fillRect(b.x - 1, b.y - 2, 2, 4); }
+    if (b.isGrenade) {
+      ctx.fillStyle = '#f80';
+      ctx.beginPath(); ctx.arc(b.x, b.y, 5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#ff0'; ctx.globalAlpha = 0.5;
+      ctx.beginPath(); ctx.arc(b.x, b.y, 3, 0, Math.PI * 2); ctx.fill();
+      ctx.globalAlpha = 1;
+    } else if (b.isSleep) {
+      ctx.fillStyle = '#a0f';
+      ctx.shadowColor = '#a0f'; ctx.shadowBlur = 4;
+      ctx.fillRect(b.x - 3, b.y - 3, 6, 6);
+      ctx.shadowBlur = 0;
+    } else {
+      // Trail
+      ctx.fillStyle = '#ff0';
+      ctx.globalAlpha = 0.2;
+      ctx.fillRect(b.x - b.dx * 1.5 - 1, b.y - b.dy * 1.5 - 1, 2, 2);
+      ctx.globalAlpha = 1;
+      // Bullet
+      ctx.fillStyle = wpnType === 'sniper' ? '#0af' : wpnType === 'machinegun' ? '#fa0' : '#ff0';
+      ctx.shadowColor = ctx.fillStyle; ctx.shadowBlur = 3;
+      const angle = Math.atan2(b.dy, b.dx);
+      ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(angle);
+      ctx.fillRect(-3, -1, 6, 2);
+      ctx.restore();
+      ctx.shadowBlur = 0;
+    }
   }
-  // Enemy bullets
-  ctx.fillStyle = '#f44';
-  for (const b of hunt.enemyBullets) { ctx.fillRect(b.x - 2, b.y - 2, 4, 4); }
+  // Enemy bullets (red, with trail)
+  for (const b of hunt.enemyBullets) {
+    ctx.fillStyle = '#f44';
+    ctx.globalAlpha = 0.2;
+    ctx.fillRect(b.x - b.dx, b.y - b.dy, 3, 3);
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = '#f44';
+    ctx.shadowColor = '#f44'; ctx.shadowBlur = 3;
+    ctx.fillRect(b.x - 2, b.y - 2, 4, 4);
+    ctx.shadowBlur = 0;
+  }
 
   Particles.renderParticles(ctx);
   Particles.renderDamageNumbers(ctx);
