@@ -1,167 +1,75 @@
 // ============================================
-// SOUND SYSTEM — Web Audio API synthesized sounds
+// SOUND — Web Audio API, different sounds per weapon
 // ============================================
 
-let audioCtx = null;
+let ctx = null;
 
 export function initAudio() {
-  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
 }
 
-export function playSound(type, volume = 1) {
-  if (!audioCtx) return;
-  const osc = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
-  osc.connect(gain);
-  gain.connect(audioCtx.destination);
-  const t = audioCtx.currentTime;
-  const v = volume;
+function osc(type, freq, freqEnd, dur, vol = 0.12, delay = 0) {
+  if (!ctx) return;
+  const o = ctx.createOscillator();
+  const g = ctx.createGain();
+  o.connect(g); g.connect(ctx.destination);
+  const t = ctx.currentTime + delay;
+  o.type = type;
+  o.frequency.setValueAtTime(freq, t);
+  o.frequency.exponentialRampToValueAtTime(Math.max(1, freqEnd), t + dur);
+  g.gain.setValueAtTime(vol, t);
+  g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  o.start(t); o.stop(t + dur);
+}
 
+export function playSound(type) {
   switch (type) {
     case 'shoot_pistol':
-      osc.type = 'square';
-      osc.frequency.setValueAtTime(900, t);
-      osc.frequency.exponentialRampToValueAtTime(200, t + 0.08);
-      gain.gain.setValueAtTime(0.12 * v, t);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
-      osc.start(t); osc.stop(t + 0.08);
+      osc('square', 900, 200, 0.08, 0.12);
+      osc('sawtooth', 400, 100, 0.05, 0.05, 0.02);
       break;
-
     case 'shoot_machinegun':
-      osc.type = 'square';
-      osc.frequency.setValueAtTime(1200, t);
-      osc.frequency.exponentialRampToValueAtTime(400, t + 0.04);
-      gain.gain.setValueAtTime(0.08 * v, t);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.04);
-      osc.start(t); osc.stop(t + 0.04);
+      osc('square', 1200, 400, 0.035, 0.07);
       break;
-
     case 'shoot_sniper':
-      osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(500, t);
-      osc.frequency.exponentialRampToValueAtTime(80, t + 0.2);
-      gain.gain.setValueAtTime(0.18 * v, t);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
-      osc.start(t); osc.stop(t + 0.2);
+      osc('sawtooth', 500, 60, 0.22, 0.18);
+      osc('square', 200, 30, 0.15, 0.08, 0.05);
       break;
-
     case 'shoot_sword':
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(300, t);
-      osc.frequency.exponentialRampToValueAtTime(150, t + 0.12);
-      gain.gain.setValueAtTime(0.15 * v, t);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
-      osc.start(t); osc.stop(t + 0.12);
+      osc('triangle', 400, 150, 0.1, 0.12);
+      osc('sine', 800, 300, 0.08, 0.06);
       break;
-
     case 'shoot':
-      osc.type = 'square';
-      osc.frequency.setValueAtTime(800, t);
-      osc.frequency.exponentialRampToValueAtTime(200, t + 0.1);
-      gain.gain.setValueAtTime(0.12 * v, t);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
-      osc.start(t); osc.stop(t + 0.1);
+      osc('square', 800, 200, 0.08, 0.1);
       break;
-
-    case 'explosion': {
-      // Multi-layer explosion
-      const osc2 = audioCtx.createOscillator();
-      const gain2 = audioCtx.createGain();
-      osc2.connect(gain2); gain2.connect(audioCtx.destination);
-      osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(150, t);
-      osc.frequency.exponentialRampToValueAtTime(20, t + 0.4);
-      gain.gain.setValueAtTime(0.2 * v, t);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
-      osc2.type = 'square';
-      osc2.frequency.setValueAtTime(80, t);
-      osc2.frequency.exponentialRampToValueAtTime(15, t + 0.3);
-      gain2.gain.setValueAtTime(0.15 * v, t);
-      gain2.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
-      osc.start(t); osc.stop(t + 0.4);
-      osc2.start(t); osc2.stop(t + 0.3);
+    case 'explosion':
+      osc('sawtooth', 150, 15, 0.4, 0.2);
+      osc('square', 80, 10, 0.3, 0.12, 0.05);
+      osc('triangle', 200, 30, 0.2, 0.08);
       break;
-    }
-
     case 'hit':
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(400, t);
-      osc.frequency.exponentialRampToValueAtTime(100, t + 0.06);
-      gain.gain.setValueAtTime(0.1 * v, t);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
-      osc.start(t); osc.stop(t + 0.06);
+      osc('triangle', 400, 100, 0.06, 0.1);
       break;
-
     case 'beep':
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(600, t);
-      gain.gain.setValueAtTime(0.04 * v, t);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.04);
-      osc.start(t); osc.stop(t + 0.04);
+      osc('sine', 600, 580, 0.04, 0.03);
       break;
-
     case 'click':
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(1000, t);
-      gain.gain.setValueAtTime(0.08 * v, t);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.03);
-      osc.start(t); osc.stop(t + 0.03);
+      osc('sine', 1000, 900, 0.03, 0.06);
       break;
-
-    case 'glitch': {
-      const osc2 = audioCtx.createOscillator();
-      const gain2 = audioCtx.createGain();
-      osc2.connect(gain2); gain2.connect(audioCtx.destination);
-      osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(Math.random() * 2000 + 100, t);
-      osc.frequency.setValueAtTime(Math.random() * 2000 + 100, t + 0.05);
-      gain.gain.setValueAtTime(0.08 * v, t);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
-      osc2.type = 'square';
-      osc2.frequency.setValueAtTime(Math.random() * 500 + 50, t);
-      gain2.gain.setValueAtTime(0.05 * v, t);
-      gain2.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
-      osc.start(t); osc.stop(t + 0.12);
-      osc2.start(t); osc2.stop(t + 0.08);
+    case 'glitch':
+      osc('sawtooth', 100 + Math.random() * 2000, 50 + Math.random() * 500, 0.12, 0.08);
+      osc('square', Math.random() * 1000, Math.random() * 200, 0.08, 0.04, 0.03);
       break;
-    }
-
     case 'alarm':
-      osc.type = 'square';
-      osc.frequency.setValueAtTime(200, t);
-      osc.frequency.linearRampToValueAtTime(800, t + 0.5);
-      gain.gain.setValueAtTime(0.1 * v, t);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
-      osc.start(t); osc.stop(t + 0.5);
+      osc('square', 200, 800, 0.5, 0.1);
       break;
-
     case 'pickup':
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(400, t);
-      osc.frequency.exponentialRampToValueAtTime(800, t + 0.1);
-      gain.gain.setValueAtTime(0.1 * v, t);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
-      osc.start(t); osc.stop(t + 0.15);
+      osc('sine', 400, 800, 0.12, 0.1);
+      osc('sine', 600, 1000, 0.08, 0.06, 0.06);
       break;
-
     case 'death':
-      osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(400, t);
-      osc.frequency.exponentialRampToValueAtTime(50, t + 0.8);
-      gain.gain.setValueAtTime(0.15 * v, t);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.8);
-      osc.start(t); osc.stop(t + 0.8);
+      osc('sawtooth', 400, 30, 0.8, 0.15);
+      osc('square', 200, 20, 0.6, 0.1, 0.1);
       break;
-
-    case 'ambient': {
-      // Low drone
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(60, t);
-      gain.gain.setValueAtTime(0.03 * v, t);
-      gain.gain.linearRampToValueAtTime(0.05 * v, t + 1);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 3);
-      osc.start(t); osc.stop(t + 3);
-      break;
-    }
   }
 }
