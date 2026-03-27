@@ -23,6 +23,7 @@ const STATES = {
   SHOP: 'shop',
   PUZZLE: 'puzzle',
   ENDING: 'ending',
+  LANDING: 'landing',
   DEATH: 'death'
 };
 
@@ -1248,9 +1249,9 @@ function updateShip(dt) {
   // Timer
   ship.timer += dt;
   if (ship.timer >= ship.maxTime) {
-    // Survived! Go to hunt
-    huntInit();
-    gameState = STATES.HUNT;
+    // Survived! Go to landing animation
+    landingInit();
+    gameState = STATES.LANDING;
   }
 
   // Render
@@ -1272,23 +1273,49 @@ function renderShip() {
   }
   ctx.globalAlpha = 1;
 
-  // Ship
+  // Ship (detailed bounty hunter vessel)
   ctx.save();
   ctx.translate(ship.x, ship.y);
-  ctx.fillStyle = '#0ff';
+  // Main hull
+  ctx.fillStyle = '#0a3a4a';
   ctx.beginPath();
-  ctx.moveTo(0, -15);
-  ctx.lineTo(-12, 10);
-  ctx.lineTo(-5, 7);
+  ctx.moveTo(0, -18);
+  ctx.lineTo(-8, -5);
+  ctx.lineTo(-14, 8);
+  ctx.lineTo(-6, 6);
   ctx.lineTo(0, 12);
-  ctx.lineTo(5, 7);
-  ctx.lineTo(12, 10);
+  ctx.lineTo(6, 6);
+  ctx.lineTo(14, 8);
+  ctx.lineTo(8, -5);
   ctx.closePath();
   ctx.fill();
-  // Engine glow
+  // Hull outline
+  ctx.strokeStyle = '#0ff';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  // Cockpit
+  ctx.fillStyle = '#0ff';
+  ctx.beginPath();
+  ctx.ellipse(0, -8, 3, 5, 0, 0, Math.PI * 2);
+  ctx.fill();
+  // Wings detail
+  ctx.strokeStyle = '#088';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(-8, -3); ctx.lineTo(-16, 6); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(8, -3); ctx.lineTo(16, 6); ctx.stroke();
+  // Wing tips
+  ctx.fillStyle = '#f00';
+  ctx.fillRect(-17, 4, 3, 3);
+  ctx.fillRect(14, 4, 3, 3);
+  // Engine glow (dual engines)
   ctx.fillStyle = '#f80';
-  ctx.globalAlpha = 0.5 + Math.random() * 0.3;
-  ctx.fillRect(-4, 10, 8, 5 + Math.random() * 5);
+  ctx.globalAlpha = 0.5 + Math.random() * 0.4;
+  ctx.fillRect(-5, 10, 3, 5 + Math.random() * 8);
+  ctx.fillRect(2, 10, 3, 5 + Math.random() * 8);
+  ctx.fillStyle = '#ff0';
+  ctx.globalAlpha = 0.3 + Math.random() * 0.3;
+  ctx.fillRect(-4, 12, 1, 3 + Math.random() * 5);
+  ctx.fillRect(3, 12, 1, 3 + Math.random() * 5);
   ctx.globalAlpha = 1;
   ctx.restore();
 
@@ -1344,6 +1371,129 @@ function renderShip() {
     ctx.font = '16px "Share Tech Mono", monospace';
     ctx.fillText('WASD — маневрування  |  ПРОБІЛ — стрільба', 400, 580);
     if (keys['Space']) save.tutorialShown.shoot = true;
+  }
+}
+
+// ============================================
+// LANDING ANIMATION
+// ============================================
+let landing = { timer: 0, phase: 0, planetColor: '#1a3a1a' };
+
+function landingInit() {
+  landing.timer = 0;
+  landing.phase = 0;
+  const colors = ['#1a3a1a', '#2a1a1a', '#1a1a3a', '#3a2a1a', '#1a3a3a'];
+  landing.planetColor = colors[save.missionNumber % colors.length];
+}
+
+function updateLanding(dt) {
+  landing.timer += dt;
+
+  ctx.fillStyle = '#050510';
+  ctx.fillRect(0, 0, 800, 600);
+
+  // Stars
+  ctx.fillStyle = '#fff';
+  for (let i = 0; i < 80; i++) {
+    const sx = (i * 137) % 800;
+    const sy = (i * 251 + landing.timer * 100) % 600;
+    ctx.globalAlpha = 0.2 + (i % 5) * 0.1;
+    ctx.fillRect(sx, sy, 1, 1);
+  }
+  ctx.globalAlpha = 1;
+
+  if (landing.timer < 2) {
+    // Phase 1: Planet approaching from below
+    const progress = landing.timer / 2;
+    const planetY = 600 + 300 - progress * 400;
+    const planetR = 200 + progress * 150;
+
+    // Planet surface
+    ctx.fillStyle = landing.planetColor;
+    ctx.beginPath();
+    ctx.arc(400, planetY, planetR, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Atmosphere glow
+    ctx.strokeStyle = '#0ff';
+    ctx.lineWidth = 2;
+    ctx.globalAlpha = 0.3;
+    ctx.beginPath();
+    ctx.arc(400, planetY, planetR + 5, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+
+    // Ship descending
+    const shipY = 100 + progress * 200;
+    ctx.save();
+    ctx.translate(400, shipY);
+    ctx.fillStyle = '#0ff';
+    ctx.beginPath();
+    ctx.moveTo(0, -12);
+    ctx.lineTo(-10, 8);
+    ctx.lineTo(0, 5);
+    ctx.lineTo(10, 8);
+    ctx.closePath();
+    ctx.fill();
+    // Engine fire
+    ctx.fillStyle = '#f80';
+    ctx.globalAlpha = 0.7;
+    ctx.fillRect(-3, 8, 6, 8 + Math.random() * 8);
+    ctx.globalAlpha = 1;
+    ctx.restore();
+
+    // Text
+    ctx.fillStyle = '#0ff';
+    ctx.font = '16px "Share Tech Mono", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('НАБЛИЖЕННЯ ДО ПЛАНЕТИ...', 400, 50);
+  } else if (landing.timer < 3.5) {
+    // Phase 2: Atmosphere entry (screen shake + heat effect)
+    const progress = (landing.timer - 2) / 1.5;
+
+    // Planet fills screen
+    ctx.fillStyle = landing.planetColor;
+    ctx.fillRect(0, 0, 800, 600);
+
+    // Heat lines
+    ctx.strokeStyle = '#f80';
+    ctx.lineWidth = 2;
+    ctx.globalAlpha = 0.5 * (1 - progress);
+    for (let i = 0; i < 10; i++) {
+      const lx = Math.random() * 800;
+      ctx.beginPath();
+      ctx.moveTo(lx, 0);
+      ctx.lineTo(lx + (Math.random() - 0.5) * 20, 600);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+
+    // Flash
+    if (progress < 0.3) {
+      ctx.fillStyle = '#fff';
+      ctx.globalAlpha = (1 - progress / 0.3) * 0.5;
+      ctx.fillRect(0, 0, 800, 600);
+      ctx.globalAlpha = 1;
+    }
+
+    // Screen shake
+    if (progress < 0.7) {
+      screenShakeX = (Math.random() - 0.5) * 8;
+      screenShakeY = (Math.random() - 0.5) * 5;
+    }
+
+    ctx.fillStyle = '#0ff';
+    ctx.font = '20px "Orbitron", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('ВХІД В АТМОСФЕРУ', 400, 300);
+
+    playSound('glitch');
+  } else {
+    // Phase 3: Landed
+    screenShakeX = 0;
+    screenShakeY = 0;
+    huntInit();
+    gameState = STATES.HUNT;
   }
 }
 
@@ -1704,6 +1854,19 @@ function updateEnemy(e, dt, dtMs) {
   // Boundaries
   e.x = Math.max(10, Math.min(hunt.mapWidth - 10, e.x));
   e.y = Math.max(10, Math.min(hunt.mapHeight - 10, e.y));
+
+  // Obstacle collision for enemies
+  for (const obs of hunt.obstacles) {
+    if (e.x > obs.x - 10 && e.x < obs.x + obs.w + 10 &&
+        e.y > obs.y - 10 && e.y < obs.y + obs.h + 10) {
+      // Push away from obstacle center
+      const cx = obs.x + obs.w / 2;
+      const cy = obs.y + obs.h / 2;
+      const pushAngle = Math.atan2(e.y - cy, e.x - cx);
+      e.x += Math.cos(pushAngle) * 2;
+      e.y += Math.sin(pushAngle) * 2;
+    }
+  }
 }
 
 function updateBoss(dt, dtMs) {
@@ -1762,6 +1925,18 @@ function updateBoss(dt, dtMs) {
 
   b.x = Math.max(10, Math.min(hunt.mapWidth - 10, b.x));
   b.y = Math.max(10, Math.min(hunt.mapHeight - 10, b.y));
+
+  // Obstacle collision for boss
+  for (const obs of hunt.obstacles) {
+    if (b.x > obs.x - 12 && b.x < obs.x + obs.w + 12 &&
+        b.y > obs.y - 12 && b.y < obs.y + obs.h + 12) {
+      const cx = obs.x + obs.w / 2;
+      const cy = obs.y + obs.h / 2;
+      const pushAngle = Math.atan2(b.y - cy, b.x - cx);
+      b.x += Math.cos(pushAngle) * 2;
+      b.y += Math.sin(pushAngle) * 2;
+    }
+  }
 }
 
 function useBossAbility(boss) {
@@ -1926,14 +2101,37 @@ function renderHunt() {
       ctx.translate(b.x, b.y);
       ctx.globalAlpha = b.isInvisible ? 0.2 : 1;
 
-      // Boss body
-      ctx.fillStyle = '#f00';
+      // Boss body (large alien creature)
+      // Body
+      ctx.fillStyle = '#3a0a0a';
       ctx.beginPath();
-      ctx.arc(0, 0, 16, 0, Math.PI * 2);
+      ctx.ellipse(0, 0, 14, 18, 0, 0, Math.PI * 2);
       ctx.fill();
-      ctx.strokeStyle = '#f88';
+      ctx.strokeStyle = '#f44';
       ctx.lineWidth = 2;
       ctx.stroke();
+      // Head with horns
+      ctx.fillStyle = '#f00';
+      ctx.beginPath();
+      ctx.arc(0, -16, 8, 0, Math.PI * 2);
+      ctx.fill();
+      // Horns
+      ctx.strokeStyle = '#f88';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(-6, -20); ctx.lineTo(-12, -32); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(6, -20); ctx.lineTo(12, -32); ctx.stroke();
+      // Eyes (glowing)
+      ctx.fillStyle = '#ff0';
+      ctx.shadowColor = '#ff0';
+      ctx.shadowBlur = 5;
+      ctx.fillRect(-5, -18, 3, 3);
+      ctx.fillRect(2, -18, 3, 3);
+      ctx.shadowBlur = 0;
+      // Arms
+      ctx.strokeStyle = '#a00';
+      ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(-14, -5); ctx.lineTo(-22, 5); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(14, -5); ctx.lineTo(22, 5); ctx.stroke();
 
       // Shield effect
       if (b.isShielded) {
@@ -1948,43 +2146,75 @@ function renderHunt() {
 
       ctx.restore();
 
-      // Boss HP bar
-      drawHPBar(b.x - 25, b.y - 25, 50, 5, b.hp, b.maxHP, '#f00');
-
-      // Boss weapon icon
-      if (b.weapon) {
-        ctx.fillStyle = '#aaa';
-        ctx.font = '9px "Share Tech Mono", monospace';
-        ctx.textAlign = 'center';
-        ctx.fillText(WEAPONS[b.weapon]?.name || '', b.x, b.y - 30);
-      }
+      // Boss HP bar + label
+      drawHPBar(b.x - 30, b.y - 28, 60, 6, b.hp, b.maxHP, '#f00');
+      ctx.fillStyle = '#f88';
+      ctx.font = '9px "Orbitron", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('БОС', b.x, b.y - 34);
     }
   }
 
-  // Player
+  // Player (humanoid bounty hunter)
   const p = hunt.player;
-  ctx.save();
-  ctx.translate(p.x, p.y);
-  ctx.globalAlpha = p.invincible > 0 ? (Math.floor(Date.now() / 60) % 2 ? 0.3 : 1) : 1;
-
-  // Body
-  ctx.fillStyle = '#0ff';
-  ctx.beginPath();
-  ctx.arc(0, 0, 10, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Weapon direction
   const weapon = save.weapons[save.activeWeapon];
   const wData = WEAPONS[weapon.type];
   const dirMap = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
   const [ddx, ddy] = dirMap[p.dir];
 
-  ctx.strokeStyle = wData.type === 'melee' ? '#fff' : '#ff0';
-  ctx.lineWidth = wData.type === 'melee' ? 3 : 2;
+  ctx.save();
+  ctx.translate(p.x, p.y);
+  ctx.globalAlpha = p.invincible > 0 ? (Math.floor(Date.now() / 60) % 2 ? 0.3 : 1) : 1;
+
+  // Body (armored suit)
+  ctx.fillStyle = '#0a3a3a';
   ctx.beginPath();
-  ctx.moveTo(ddx * 10, ddy * 10);
-  ctx.lineTo(ddx * 20, ddy * 20);
+  ctx.ellipse(0, 2, 8, 10, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#0ff';
+  ctx.lineWidth = 1.5;
   ctx.stroke();
+  // Head (helmet)
+  ctx.fillStyle = '#0a4a4a';
+  ctx.beginPath();
+  ctx.arc(0, -10, 6, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#0ff';
+  ctx.stroke();
+  // Visor
+  ctx.fillStyle = '#0ff';
+  ctx.fillRect(-4, -12, 8, 3);
+  // Legs (simple)
+  ctx.strokeStyle = '#088';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(-4, 10); ctx.lineTo(-5, 16); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(4, 10); ctx.lineTo(5, 16); ctx.stroke();
+
+  // Weapon visual
+  if (wData.type === 'melee') {
+    // Sword
+    ctx.strokeStyle = '#aaf';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(ddx * 8 + ddy * 5, ddy * 8 - ddx * 5);
+    ctx.lineTo(ddx * 22 + ddy * 2, ddy * 22 - ddx * 2);
+    ctx.stroke();
+    // Blade glow
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  } else {
+    // Gun barrel
+    ctx.strokeStyle = '#888';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(ddx * 8, ddy * 8);
+    ctx.lineTo(ddx * 18, ddy * 18);
+    ctx.stroke();
+    // Muzzle
+    ctx.fillStyle = '#ff0';
+    ctx.fillRect(ddx * 17 - 2, ddy * 17 - 2, 4, 4);
+  }
 
   ctx.restore();
 
@@ -2054,43 +2284,89 @@ function renderEntity(e) {
   ctx.translate(e.x, e.y);
 
   if (e.type === 'shooter') {
-    // Tall alien
-    ctx.fillStyle = e.color;
-    ctx.fillRect(-6, -12, 12, 20);
-    ctx.fillRect(-3, -16, 6, 4); // head
-    ctx.strokeStyle = '#fff';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(-6, -12, 12, 20);
-  } else if (e.type === 'kamikaze') {
-    // Glowing bug
-    ctx.fillStyle = e.color;
-    ctx.globalAlpha = 0.6 + Math.sin(Date.now() / 100) * 0.3;
+    // Tall alien with long weapon (Stellaris-style)
+    // Body
+    ctx.fillStyle = '#2a0a3a';
     ctx.beginPath();
-    ctx.arc(0, 0, 8, 0, Math.PI * 2);
+    ctx.ellipse(0, 2, 7, 12, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // Head (elongated)
+    ctx.fillStyle = e.color;
+    ctx.beginPath();
+    ctx.ellipse(0, -14, 5, 6, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // Eyes (3 glowing dots)
+    ctx.fillStyle = '#f0f';
+    ctx.fillRect(-4, -16, 2, 2);
+    ctx.fillRect(-1, -17, 2, 2);
+    ctx.fillRect(2, -16, 2, 2);
+    // Long weapon arm
+    ctx.strokeStyle = '#fa0';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(7, -2); ctx.lineTo(18, -5); ctx.stroke();
+    ctx.fillStyle = '#ff0';
+    ctx.fillRect(16, -7, 4, 4);
+  } else if (e.type === 'kamikaze') {
+    // Glowing bug-mutant (Starbound style)
+    const pulse = 0.6 + Math.sin(Date.now() / 100) * 0.3;
+    // Glow aura
+    ctx.globalAlpha = pulse * 0.3;
+    ctx.fillStyle = e.color;
+    ctx.beginPath();
+    ctx.arc(0, 0, 14, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = pulse;
+    // Body (bug shape)
+    ctx.fillStyle = '#aa0';
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 7, 9, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // Wings
+    ctx.fillStyle = e.color;
+    ctx.globalAlpha = 0.5;
+    ctx.beginPath();
+    ctx.ellipse(-8, -3, 5, 3, -0.3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(8, -3, 5, 3, 0.3, 0, Math.PI * 2);
     ctx.fill();
     ctx.globalAlpha = 1;
+    // Eyes
+    ctx.fillStyle = '#f00';
+    ctx.fillRect(-3, -3, 2, 2);
+    ctx.fillRect(1, -3, 2, 2);
   } else if (e.type === 'shield') {
-    // Armored humanoid
-    ctx.fillStyle = e.color;
-    ctx.fillRect(-10, -10, 20, 20);
-    ctx.strokeStyle = '#8af';
+    // Big armored alien (heavy golem style)
+    // Body
+    ctx.fillStyle = '#1a2a4a';
+    ctx.fillRect(-11, -8, 22, 20);
+    // Armor plates
+    ctx.strokeStyle = e.color;
     ctx.lineWidth = 2;
-    ctx.strokeRect(-10, -10, 20, 20);
-    ctx.fillRect(-12, -6, 4, 12); // left arm shield
+    ctx.strokeRect(-11, -8, 22, 20);
+    ctx.strokeRect(-9, -6, 18, 6);
+    // Head
+    ctx.fillStyle = e.color;
+    ctx.fillRect(-6, -14, 12, 7);
+    // Visor
+    ctx.fillStyle = '#0ff';
+    ctx.fillRect(-4, -12, 8, 3);
+    // Shield on left arm
+    ctx.fillStyle = '#3a5a8a';
+    ctx.fillRect(-16, -6, 6, 14);
+    ctx.strokeStyle = '#6af';
+    ctx.strokeRect(-16, -6, 6, 14);
   }
 
   ctx.restore();
 
   // HP bar
-  drawHPBar(e.x - 15, e.y - 22, 30, 4, e.hp, e.maxHP, e.color);
-
-  // Weapon icon
-  if (e.weapon) {
-    ctx.fillStyle = '#888';
-    ctx.font = '8px "Share Tech Mono", monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText(WEAPONS[e.weapon]?.name || '', e.x, e.y - 26);
-  }
+  drawHPBar(e.x - 15, e.y - 25, 30, 4, e.hp, e.maxHP, e.color);
+  // Type name
+  ctx.fillStyle = '#666';
+  ctx.font = '8px "Share Tech Mono", monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText(ENEMY_TYPES[e.type]?.name || '', e.x, e.y - 29);
 }
 
 function renderMiniMap() {
@@ -2137,24 +2413,66 @@ function renderMiniMap() {
 // DIALOGUE SYSTEM
 // ============================================
 let dialogue = {
+  lines: [],
+  lineIndex: 0,
   writer: null,
   phrase: null,
-  glitchWords: ['не маєш', 'брехня', 'дані', 'код', 'система', 'цикл', 'петля'],
+  glitchWords: ['не маєш', 'брехня', 'дані', 'код', 'система', 'цикл', 'петля', 'правда', 'симуляція'],
   done: false
 };
+
+// Boss dialogue lines for each mission
+const BOSS_DIALOGUES = [
+  // Mission 1
+  ['Ти думаєш що робиш правильно?', 'Вони не розповіли тобі все...', 'Я лише знав забагато.'],
+  // Mission 2
+  ['Вони послали тебе за мною.', 'Ти навіть не запитав чому.', 'Подумай про це.'],
+  // Mission 3
+  ['Ти колись бачив код цього світу?', 'Ні? Тоді ти нічого не знаєш.', 'Дані кажуть більше ніж слова.'],
+  // Mission 4
+  ['Скільки до мене було таких як ти?', 'Система створює мисливців.', 'І знищує коли вони непотрібні.'],
+  // Mission 5
+  ['Ти відчуваєш що щось не так?', 'Цей сигнал... він не для тебе.', 'Він для тих хто дивиться.'],
+  // Mission 6
+  ['Ця зона мертва не просто так.', 'Тут зламалась реальність.', 'Як і скрізь... просто тут видно.'],
+  // Mission 7
+  ['Тіні знають більше за світло.', 'В темряві ховається правда.', 'Ти боїшся темряви?'],
+  // Mission 8
+  ['Ехо... все повторюється.', 'Ти вже робив це раніше.', 'І будеш робити знову.'],
+  // Mission 9
+  ['Маяк світить для тих хто заблукав.', 'Але ти не заблукав.', 'Тебе спрямували.'],
+  // Mission 10
+  ['Це останній сигнал.', 'Не мій. Твій.', 'Подумай... хто насправді ціль?']
+];
+
+function getDialogueLines(missionNum) {
+  if (missionNum < BOSS_DIALOGUES.length) return BOSS_DIALOGUES[missionNum];
+  // Random for infinite missions
+  const lines = [
+    ['Ще один мисливець...', 'Вони ніколи не зупиняються.'],
+    ['Ти впевнений що на правильному боці?', 'Подумай ще раз.'],
+    ['Дані системи фрагментовані.', 'Як і твоя пам\'ять.'],
+    ['Цикл продовжується.', 'Нескінченно.']
+  ];
+  return lines[Math.floor(Math.random() * lines.length)];
+}
 
 function dialogueInit() {
   const phrase = getMissionPhrase(save.missionNumber);
   dialogue.phrase = phrase;
-  dialogue.writer = new TypeWriter(phrase.text, 60);
   dialogue.done = false;
+
+  // Build full dialogue: boss lines + secret phrase at the end
+  const bossLines = getDialogueLines(save.missionNumber);
+  dialogue.lines = [...bossLines, phrase.text];
+  dialogue.lineIndex = 0;
+  dialogue.writer = new TypeWriter(dialogue.lines[0], 40);
 
   // Save phrase
   if (!save.collectedPhrases.find(p => p.text === phrase.text)) {
     save.collectedPhrases.push(phrase);
   }
 
-  // Cruelty: reading dialogue reduces it
   save.crueltyRating = Math.max(0, save.crueltyRating - 1);
 }
 
@@ -2164,39 +2482,53 @@ function updateDialogue(dt) {
 
   dialogue.writer.update(dt);
 
-  // Boss still visible (defeated)
+  // Defeated boss visual
+  ctx.save();
+  ctx.translate(400, 180);
+  // Boss body (defeated, glitching)
+  ctx.globalAlpha = 0.4 + Math.sin(Date.now() / 500) * 0.1;
   ctx.fillStyle = '#f00';
-  ctx.globalAlpha = 0.3;
   ctx.beginPath();
-  ctx.arc(400, 200, 30, 0, Math.PI * 2);
+  ctx.arc(0, 0, 25, 0, Math.PI * 2);
   ctx.fill();
+  // Horns
+  ctx.strokeStyle = '#f44';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(-10, -20); ctx.lineTo(-15, -35); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(10, -20); ctx.lineTo(15, -35); ctx.stroke();
+  // Eyes (X = defeated)
+  ctx.strokeStyle = '#ff0';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(-8, -5); ctx.lineTo(-3, 0); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(-3, -5); ctx.lineTo(-8, 0); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(3, -5); ctx.lineTo(8, 0); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(8, -5); ctx.lineTo(3, 0); ctx.stroke();
   ctx.globalAlpha = 1;
+  ctx.restore();
 
   ctx.fillStyle = '#aaa';
   ctx.font = '12px "Share Tech Mono", monospace';
   ctx.textAlign = 'center';
-  ctx.fillText('ЦІЛЬ ЗНЕШКОДЖЕНА', 400, 250);
+  ctx.fillText('ЦІЛЬ ЗНЕШКОДЖЕНА', 400, 230);
 
-  // Dialogue box
-  ctx.fillStyle = 'rgba(0,20,20,0.9)';
-  ctx.fillRect(100, 350, 600, 120);
-  ctx.strokeStyle = '#f44';
-  ctx.strokeRect(100, 350, 600, 120);
+  // Show completed dialogue lines
+  const startY = 290;
+  for (let i = 0; i < dialogue.lineIndex; i++) {
+    ctx.fillStyle = i === dialogue.lines.length - 1 ? '#f0f' : '#777';
+    ctx.font = '14px "Share Tech Mono", monospace';
+    ctx.fillText(dialogue.lines[i], 400, startY + i * 22);
+  }
 
-  ctx.fillStyle = '#f44';
-  ctx.font = '12px "Share Tech Mono", monospace';
-  ctx.textAlign = 'left';
-  ctx.fillText('ЦІЛЬ ГОВОРИТЬ:', 120, 380);
-
-  // Phrase with glitch on certain words
-  ctx.fillStyle = '#fff';
-  ctx.font = '18px "Share Tech Mono", monospace';
+  // Current line with glitch effect
   const text = dialogue.writer.text;
-  let xPos = 120;
+  const isSecretLine = dialogue.lineIndex === dialogue.lines.length - 1;
 
-  // Simple glitch: random letters flicker
+  ctx.font = isSecretLine ? '18px "Share Tech Mono", monospace' : '16px "Share Tech Mono", monospace';
+  let xPos = 400 - ctx.measureText(text).width / 2;
+  const lineY = startY + dialogue.lineIndex * 22;
+
   for (let i = 0; i < text.length; i++) {
-    const shouldGlitch = dialogue.glitchWords.some(w => {
+    const shouldGlitch = isSecretLine || dialogue.glitchWords.some(w => {
       const idx = text.toLowerCase().indexOf(w);
       return idx !== -1 && i >= idx && i < idx + w.length;
     });
@@ -2205,36 +2537,38 @@ function updateDialogue(dt) {
       ctx.fillStyle = '#f0f';
       ctx.globalAlpha = 0.5 + Math.random() * 0.5;
     } else {
-      ctx.fillStyle = '#fff';
+      ctx.fillStyle = isSecretLine ? '#f0f' : '#ddd';
       ctx.globalAlpha = 1;
     }
-    ctx.fillText(text[i], xPos, 420);
+    ctx.fillText(text[i], xPos, lineY);
     xPos += ctx.measureText(text[i]).width;
   }
   ctx.globalAlpha = 1;
 
+  // Advance to next line or show button
   if (dialogue.writer.done) {
-    drawButton(300, 490, 200, 40, '[ Ув\'язнити ]');
-
-    if (isButtonClicked(300, 490, 200, 40) || keyJustPressed['Enter']) {
-      playSound('click');
-      rewardInit();
-      gameState = STATES.REWARD;
-    }
-
-    // Hint to read
-    if (!save.tutorialShown.interact) {
-      ctx.fillStyle = 'rgba(0,255,255,0.6)';
-      ctx.font = '12px "Share Tech Mono", monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText('Прочитай що він каже...', 400, 550);
+    if (dialogue.lineIndex < dialogue.lines.length - 1) {
+      if (!dialogue.writer._waited) dialogue.writer._waited = 0;
+      dialogue.writer._waited += dt;
+      if (dialogue.writer._waited > 1.2) {
+        dialogue.lineIndex++;
+        dialogue.writer = new TypeWriter(dialogue.lines[dialogue.lineIndex], 40);
+      }
+    } else {
+      dialogue.done = true;
+      drawButton(300, 530, 200, 40, '[ Ув\'язнити ]');
+      if (isButtonClicked(300, 530, 200, 40) || keyJustPressed['Enter']) {
+        playSound('click');
+        rewardInit();
+        gameState = STATES.REWARD;
+      }
     }
   }
 
-  // Skip with Space
+  // Skip current line
   if (keyJustPressed['Space'] && !dialogue.writer.done) {
     dialogue.writer.skip();
-    save.crueltyRating += 2; // Skipping = cruel
+    save.crueltyRating += 1;
   }
 }
 
@@ -2963,6 +3297,7 @@ function gameLoop(time) {
       break;
     case STATES.MISSION_BRIEF: updateMissionBrief(deltaTime); break;
     case STATES.SHIP: updateShip(deltaTime); break;
+    case STATES.LANDING: updateLanding(deltaTime); break;
     case STATES.HUNT: updateHunt(deltaTime); break;
     case STATES.DIALOGUE: updateDialogue(deltaTime); break;
     case STATES.REWARD: updateReward(deltaTime); break;
