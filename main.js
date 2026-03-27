@@ -1217,26 +1217,48 @@ function renderHuntScene() {
   // Enemies
   for (const e of hunt.enemies) {
     if (!e.alive) continue;
+    // Shadow
+    ctx.save(); ctx.globalAlpha = 0.15; ctx.fillStyle = '#000';
+    ctx.beginPath(); ctx.ellipse(e.x, e.y + 16, 8, 3, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    // Sprite
     ctx.save(); ctx.translate(e.x, e.y);
-    if (e.frozen > 0) { ctx.globalAlpha = 0.5; ctx.fillStyle = '#0af'; ctx.fillRect(-12, -14, 24, 28); }
+    if (e.frozen > 0) { ctx.globalAlpha = 0.5; ctx.fillStyle = '#0af'; ctx.fillRect(-12, -18, 24, 36); }
     drawEnemy(ctx, e.type, gameTime);
     ctx.restore();
-    drawHPBar(ctx, e.x - 14, e.y - 24, 28, 3, e.hp, e.maxHP, e.color);
+    drawHPBar(ctx, e.x - 14, e.y - 28, 28, 3, e.hp, e.maxHP, e.color);
+    // Type name
+    ctx.fillStyle = '#555'; ctx.font = '7px "Share Tech Mono", monospace'; ctx.textAlign = 'center';
+    ctx.fillText(ENEMY_TYPES[e.type]?.name || '', e.x, e.y - 32);
   }
 
   // Boss
   if (hunt.boss?.alive) {
     const b = hunt.boss;
+    // Shadow
+    ctx.save(); ctx.globalAlpha = 0.2; ctx.fillStyle = '#000';
+    ctx.beginPath(); ctx.ellipse(b.x, b.y + 24, 16, 5, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    // Sprite
     ctx.save(); ctx.translate(b.x, b.y);
-    if (b.frozen > 0) { ctx.fillStyle = '#0af'; ctx.globalAlpha = 0.3; ctx.fillRect(-18, -24, 36, 42); ctx.globalAlpha = 1; }
+    if (b.frozen > 0) { ctx.fillStyle = '#0af'; ctx.globalAlpha = 0.3; ctx.fillRect(-22, -30, 44, 56); ctx.globalAlpha = 1; }
     drawBoss(ctx, b.ability, gameTime, b.isShielded, b.isInvisible);
     ctx.restore();
     if (!b.isInvisible || Math.floor(gameTime * 10) % 3 === 0) {
-      drawHPBar(ctx, b.x - 28, b.y - 32, 56, 5, b.hp, b.maxHP, '#f00');
-      ctx.fillStyle = '#f88'; ctx.font = '8px "Orbitron", sans-serif'; ctx.textAlign = 'center';
-      ctx.fillText('БОС', b.x, b.y - 37);
+      drawHPBar(ctx, b.x - 30, b.y - 42, 60, 6, b.hp, b.maxHP, '#f00');
+      ctx.fillStyle = '#f88'; ctx.font = '9px "Orbitron", sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText('WARDEN XAR\'VOTH', b.x, b.y - 48);
     }
   }
+
+  // Player shadow
+  ctx.save();
+  ctx.globalAlpha = 0.2;
+  ctx.fillStyle = '#000';
+  ctx.beginPath();
+  ctx.ellipse(p.x, p.y + 14, 10, 4, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
 
   // Player
   ctx.save(); ctx.translate(p.x, p.y);
