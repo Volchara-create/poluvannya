@@ -604,13 +604,28 @@ function updateShipGame(dt) {
   if (ship.timer >= ship.maxTime) { landingInit(); state = STATES.LANDING; }
 
   // Render
-  ctx.fillStyle = '#030308';
+  ctx.fillStyle = '#020208';
   ctx.fillRect(0, 0, 800, 600);
-  // Stars
-  for (let i = 0; i < 60; i++) {
-    ctx.fillStyle = i % 7 === 0 ? '#aaf' : '#fff';
-    ctx.globalAlpha = 0.2 + (i % 5) * 0.08;
-    ctx.fillRect((i * 137 + ship.timer * 15 * (i % 3 + 1)) % 800, (i * 251 + ship.timer * 40 * (i % 3 + 1)) % 600, 1 + i % 2, 1);
+  // Nebula (subtle background color)
+  const nebGrad = ctx.createRadialGradient(600, 200, 50, 600, 200, 300);
+  nebGrad.addColorStop(0, 'rgba(40,10,60,0.15)');
+  nebGrad.addColorStop(1, 'transparent');
+  ctx.fillStyle = nebGrad;
+  ctx.fillRect(0, 0, 800, 600);
+  const nebGrad2 = ctx.createRadialGradient(150, 400, 30, 150, 400, 200);
+  nebGrad2.addColorStop(0, 'rgba(10,30,60,0.12)');
+  nebGrad2.addColorStop(1, 'transparent');
+  ctx.fillStyle = nebGrad2;
+  ctx.fillRect(0, 0, 800, 600);
+  // Stars (more, varied sizes)
+  for (let i = 0; i < 100; i++) {
+    const brightness = i % 7 === 0 ? '#aaf' : i % 11 === 0 ? '#ffa' : '#fff';
+    ctx.fillStyle = brightness;
+    ctx.globalAlpha = 0.15 + (i % 6) * 0.06;
+    const sx = (i * 137 + ship.timer * 12 * (i % 3 + 1)) % 800;
+    const sy = (i * 251 + ship.timer * 35 * (i % 3 + 1)) % 600;
+    const sz = i % 13 === 0 ? 2 : 1;
+    ctx.fillRect(sx, sy, sz, sz);
   }
   ctx.globalAlpha = 1;
 
@@ -1136,15 +1151,51 @@ function renderHuntScene() {
   // Decorations (behind)
   for (const d of hunt.decorations) { drawDecoration(ctx, d.x, d.y, d.type, theme); }
 
-  // Obstacles
+  // Obstacles (themed, detailed)
   for (const o of hunt.obstacles) {
-    ctx.fillStyle = theme.obstacles[o.type === 'rock' ? 0 : 1];
+    const baseColor = theme.obstacles[o.type === 'rock' ? 0 : 1];
+    // Shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.fillRect(o.x + 3, o.y + 3, o.w, o.h);
+    // Main body
+    ctx.fillStyle = baseColor;
     ctx.fillRect(o.x, o.y, o.w, o.h);
-    // Highlight edge
-    ctx.fillStyle = 'rgba(255,255,255,0.05)';
-    ctx.fillRect(o.x, o.y, o.w, 2);
-    ctx.fillRect(o.x, o.y, 2, o.h);
-    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+    // Top highlight
+    ctx.fillStyle = 'rgba(255,255,255,0.08)';
+    ctx.fillRect(o.x, o.y, o.w, 3);
+    ctx.fillRect(o.x, o.y, 3, o.h);
+    // Bottom shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.15)';
+    ctx.fillRect(o.x, o.y + o.h - 3, o.w, 3);
+    ctx.fillRect(o.x + o.w - 3, o.y, 3, o.h);
+    // Detail based on type
+    if (o.type === 'rock') {
+      ctx.fillStyle = 'rgba(255,255,255,0.04)';
+      ctx.fillRect(o.x + 3, o.y + 3, o.w / 2, o.h / 2);
+      // Crack
+      ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(o.x + o.w * 0.3, o.y);
+      ctx.lineTo(o.x + o.w * 0.4, o.y + o.h * 0.6);
+      ctx.lineTo(o.x + o.w * 0.6, o.y + o.h);
+      ctx.stroke();
+    } else {
+      // Crate markings
+      ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(o.x + 3, o.y + 3, o.w - 6, o.h - 6);
+      // X marking
+      ctx.beginPath();
+      ctx.moveTo(o.x + 4, o.y + 4);
+      ctx.lineTo(o.x + o.w - 4, o.y + o.h - 4);
+      ctx.moveTo(o.x + o.w - 4, o.y + 4);
+      ctx.lineTo(o.x + 4, o.y + o.h - 4);
+      ctx.stroke();
+    }
+    // Outline
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.lineWidth = 1;
     ctx.strokeRect(o.x, o.y, o.w, o.h);
   }
 
