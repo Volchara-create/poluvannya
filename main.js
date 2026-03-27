@@ -275,26 +275,65 @@ function updateHQ(dt) {
   ctx.save();
   ctx.translate(200, 150);
 
-  // Floor
+  // Floor (metal tiles)
   const aging = Math.min(5, Math.floor(save.missionNumber / 2));
   ctx.fillStyle = '#0a0a12';
   ctx.fillRect(0, 0, 380, 280);
-  ctx.strokeStyle = '#1a2a2a';
-  ctx.lineWidth = 2;
+  // Metal tile pattern
+  for (let x = 0; x < 380; x += 20) {
+    for (let y = 0; y < 280; y += 20) {
+      ctx.fillStyle = (x + y) % 40 === 0 ? '#0c0c16' : '#08080f';
+      ctx.fillRect(x, y, 20, 20);
+      ctx.strokeStyle = 'rgba(0,255,255,0.015)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x, y, 20, 20);
+    }
+  }
+  // Walls (thicker, with glow)
+  ctx.strokeStyle = '#1a3a3a';
+  ctx.lineWidth = 3;
   ctx.strokeRect(0, 0, 380, 280);
-
-  // Grid
-  ctx.strokeStyle = 'rgba(0,255,255,0.02)';
+  // Wall glow
+  ctx.strokeStyle = '#0ff';
+  ctx.globalAlpha = 0.03 + Math.sin(gameTime * 2) * 0.01;
   ctx.lineWidth = 1;
-  for (let x = 0; x < 380; x += 20) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 280); ctx.stroke(); }
-  for (let y = 0; y < 280; y += 20) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(380, y); ctx.stroke(); }
+  ctx.strokeRect(2, 2, 376, 276);
+  ctx.globalAlpha = 1;
+  // Wall lights
+  ctx.fillStyle = '#0ff';
+  ctx.globalAlpha = 0.15 + Math.sin(gameTime * 3) * 0.05;
+  ctx.fillRect(185, 0, 10, 3); // top center light
+  ctx.fillRect(0, 135, 3, 10); // left wall light
+  ctx.fillRect(377, 135, 3, 10); // right wall light
+  ctx.globalAlpha = 1;
 
-  // Cracks
+  // Cracks (aging)
   if (aging >= 2) {
-    ctx.strokeStyle = `rgba(255,0,0,${0.05 + aging * 0.02})`;
-    for (let i = 0; i < aging; i++) {
-      const cx = 30 + i * 70;
-      ctx.beginPath(); ctx.moveTo(cx, 0); ctx.lineTo(cx + 10, 25); ctx.lineTo(cx + 5, 50); ctx.stroke();
+    ctx.strokeStyle = `rgba(255,0,0,${0.04 + aging * 0.02})`;
+    ctx.lineWidth = 1;
+    for (let i = 0; i < aging + 1; i++) {
+      const cx = 25 + i * 60;
+      ctx.beginPath();
+      ctx.moveTo(cx, 0);
+      ctx.lineTo(cx + 8, 18);
+      ctx.lineTo(cx + 3, 35);
+      ctx.lineTo(cx + 12, 55);
+      ctx.stroke();
+    }
+    // Floor cracks
+    if (aging >= 3) {
+      for (let i = 0; i < aging - 1; i++) {
+        ctx.beginPath();
+        ctx.moveTo(50 + i * 90, 280);
+        ctx.lineTo(55 + i * 90, 260);
+        ctx.lineTo(48 + i * 90, 240);
+        ctx.stroke();
+      }
+    }
+    // Flickering light effect
+    if (aging >= 4 && Math.random() > 0.97) {
+      ctx.fillStyle = 'rgba(255,0,0,0.02)';
+      ctx.fillRect(0, 0, 380, 280);
     }
   }
 
@@ -1133,20 +1172,35 @@ function renderHuntScene() {
   ctx.save();
   camera.apply(ctx);
 
-  // Ground
+  // Ground with gradient atmosphere
   ctx.fillStyle = theme.ground;
   ctx.fillRect(0, 0, hunt.mapW, hunt.mapH);
-  // Ground detail tiles
+  // Ground detail tiles (checkerboard pattern)
   ctx.fillStyle = theme.groundDetail;
-  for (let x = 0; x < hunt.mapW; x += 30) {
-    for (let y = 0; y < hunt.mapH; y += 30) {
-      if ((x + y) % 60 === 0) ctx.fillRect(x, y, 30, 30);
+  for (let x = 0; x < hunt.mapW; x += 24) {
+    for (let y = 0; y < hunt.mapH; y += 24) {
+      if ((x + y) % 48 === 0) ctx.fillRect(x, y, 24, 24);
     }
   }
-  // Border
+  // Ambient light spots
+  ctx.save();
+  for (let i = 0; i < 5; i++) {
+    const lx = (i * 317) % hunt.mapW;
+    const ly = (i * 479) % hunt.mapH;
+    const grad = ctx.createRadialGradient(lx, ly, 10, lx, ly, 120);
+    grad.addColorStop(0, theme.accent + '15');
+    grad.addColorStop(1, 'transparent');
+    ctx.fillStyle = grad;
+    ctx.fillRect(lx - 120, ly - 120, 240, 240);
+  }
+  ctx.restore();
+  // Border (double line)
   ctx.strokeStyle = theme.accent;
-  ctx.lineWidth = 2;
+  ctx.lineWidth = 3;
   ctx.strokeRect(0, 0, hunt.mapW, hunt.mapH);
+  ctx.strokeStyle = theme.accent + '44';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(4, 4, hunt.mapW - 8, hunt.mapH - 8);
 
   // Decorations (behind)
   for (const d of hunt.decorations) { drawDecoration(ctx, d.x, d.y, d.type, theme); }
