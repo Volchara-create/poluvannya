@@ -16,6 +16,7 @@ import { createNewSave, saves, save, loadSaves, setSlot, saveToDisk,
   deleteSave, updateBaseLevel, WEAPONS, getWeaponDamage } from './save.js';
 import { TypeWriter } from './typewriter.js';
 import { updateGlitches, renderGlitchEffects, triggerGlitch, isControlsInverted } from './glitch.js';
+import * as ATM from './atmosphere.js';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -75,21 +76,37 @@ loadSaves();
 // ============================================
 function slotSelect(dt) {
   canvas.style.cursor = 'default';
-  ctx.fillStyle = '#000'; ctx.fillRect(0, 0, 800, 600);
-  // Stars bg
-  for (let i = 0; i < 80; i++) {
-    ctx.fillStyle = '#fff';
-    ctx.globalAlpha = 0.1 + (i % 5) * 0.04;
-    ctx.fillRect((i * 137 + gt * 3) % 800, (i * 251) % 600, 1, 1);
-  }
-  ctx.globalAlpha = 1;
 
+  // Deep space background
+  const slotBg = ctx.createRadialGradient(400, 200, 50, 400, 300, 500);
+  slotBg.addColorStop(0, '#0a0818');
+  slotBg.addColorStop(0.5, '#040410');
+  slotBg.addColorStop(1, '#010106');
+  ctx.fillStyle = slotBg;
+  ctx.fillRect(0, 0, 800, 600);
+
+  // Parallax stars
+  ATM.renderStars(ctx, gt, 0, 0, 800, 600);
+
+  // Subtle nebula
   ctx.save();
-  ctx.shadowColor = '#0ff'; ctx.shadowBlur = 20;
+  const sng = ctx.createRadialGradient(300, 200, 20, 300, 200, 200);
+  sng.addColorStop(0, 'rgba(0,60,80,0.08)');
+  sng.addColorStop(1, 'transparent');
+  ctx.fillStyle = sng; ctx.fillRect(0, 0, 800, 600);
+  ctx.restore();
+
+  // Title with enhanced glow
+  ctx.save();
+  ctx.shadowColor = '#0ff'; ctx.shadowBlur = 30;
   ctx.fillStyle = '#0ff'; ctx.font = '30px "Orbitron", sans-serif';
   ctx.textAlign = 'center'; ctx.fillText('ПОЛЮВАННЯ', 400, 70);
+  // Double glow
+  ctx.shadowBlur = 60;
+  ctx.globalAlpha = 0.3;
+  ctx.fillText('ПОЛЮВАННЯ', 400, 70);
   ctx.restore();
-  ctx.fillStyle = '#055'; ctx.font = '12px "Share Tech Mono", monospace';
+  ctx.fillStyle = '#077'; ctx.font = '12px "Share Tech Mono", monospace';
   ctx.textAlign = 'center'; ctx.fillText('Космічний Мисливець  ·  Broken Reality', 400, 95);
 
   for (let i = 0; i < 3; i++) {
@@ -226,23 +243,47 @@ function runHQ(dt) {
   }
 
   // Render
-  ctx.fillStyle = '#06060c'; ctx.fillRect(0, 0, 800, 600);
+  // Dark space background with subtle gradient
+  const hqBg = ctx.createRadialGradient(400, 300, 100, 400, 300, 450);
+  hqBg.addColorStop(0, '#0a0a18');
+  hqBg.addColorStop(1, '#040408');
+  ctx.fillStyle = hqBg;
+  ctx.fillRect(0, 0, 800, 600);
+
+  // Background stars through window effect
+  ATM.renderStars(ctx, gt * 0.3, 0, 0, 800, 600);
+
   ctx.save(); ctx.translate(200, 150);
 
-  // Floor
+  // Floor with better tiles
   const aging = Math.min(5, Math.floor(save.missionNumber / 2));
   for (let x = 0; x < 380; x += 20) for (let y = 0; y < 280; y += 20) {
-    ctx.fillStyle = (x + y) % 40 === 0 ? '#0c0c14' : '#08080e';
+    const base = (x + y) % 40 === 0 ? '#0c0c16' : '#08080f';
+    ctx.fillStyle = base;
     ctx.fillRect(x, y, 20, 20);
+    // Subtle tile edge
+    ctx.fillStyle = 'rgba(255,255,255,0.01)';
+    ctx.fillRect(x, y, 20, 1);
+    ctx.fillRect(x, y, 1, 20);
   }
-  // Walls
+  // Walls with gradient
   ctx.strokeStyle = '#1a3030'; ctx.lineWidth = 3; ctx.strokeRect(0, 0, 380, 280);
-  // Wall glow
-  ctx.strokeStyle = '#0ff'; ctx.globalAlpha = 0.025 + Math.sin(gt * 2) * 0.008; ctx.lineWidth = 1;
+  // Wall glow (animated)
+  ctx.strokeStyle = '#0ff'; ctx.globalAlpha = 0.03 + Math.sin(gt * 2) * 0.01; ctx.lineWidth = 1;
   ctx.strokeRect(1, 1, 378, 278); ctx.globalAlpha = 1;
-  // Lights
-  ctx.fillStyle = '#0ff'; ctx.globalAlpha = 0.12 + Math.sin(gt * 3) * 0.04;
-  ctx.fillRect(185, 0, 10, 2); ctx.fillRect(0, 135, 2, 10); ctx.fillRect(378, 135, 2, 10); ctx.globalAlpha = 1;
+  // Ceiling lights with glow
+  const lightPositions = [[185, 0], [0, 135], [378, 135], [95, 0], [285, 0]];
+  for (const [lx, ly] of lightPositions) {
+    ctx.fillStyle = '#0ff'; ctx.globalAlpha = 0.15 + Math.sin(gt * 3 + lx * 0.01) * 0.05;
+    ctx.fillRect(lx, ly, 10, 2);
+    // Light cone
+    const lg = ctx.createRadialGradient(lx + 5, ly + 1, 0, lx + 5, ly + 1, 40);
+    lg.addColorStop(0, 'rgba(0,255,255,0.03)');
+    lg.addColorStop(1, 'transparent');
+    ctx.fillStyle = lg;
+    ctx.fillRect(lx - 35, ly, 80, 60);
+  }
+  ctx.globalAlpha = 1;
 
   // Cracks
   if (aging >= 2) {
@@ -274,10 +315,25 @@ function runHQ(dt) {
     ctx.fillText(o.l, o.x + o.w / 2, o.y + o.h + 10);
   }
 
+  // Player light glow
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.globalAlpha = 0.04 + Math.sin(gt * 3) * 0.01;
+  const plg = ctx.createRadialGradient(hq.px, hq.py, 0, hq.px, hq.py, 50);
+  plg.addColorStop(0, '#0ff');
+  plg.addColorStop(1, 'transparent');
+  ctx.fillStyle = plg;
+  ctx.beginPath(); ctx.arc(hq.px, hq.py, 50, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+
   // Player
   ctx.save(); ctx.translate(hq.px, hq.py);
   drawHQPlayer(ctx, hq.dir, gt); ctx.restore();
   ctx.restore();
+
+  // Post-processing
+  ATM.renderVignette(ctx, 800, 600);
+  ATM.renderScanlines(ctx, 800, 600);
 
   // HUD
   if (hq.tgt) { ctx.fillStyle = '#0ff'; ctx.font = '12px "Share Tech Mono", monospace'; ctx.textAlign = 'center'; ctx.fillText('[E] — взаємодія', 400, 455); }
@@ -441,17 +497,41 @@ function runShip(dt) {
   if (sh.t >= sh.mt) { landInit(); S = 5; }
 
   // Render
-  ctx.fillStyle = '#020206'; ctx.fillRect(0, 0, 800, 600);
-  // Nebula
+  // Deep space gradient
+  const spaceG = ctx.createRadialGradient(400, 300, 50, 400, 300, 500);
+  spaceG.addColorStop(0, '#060818');
+  spaceG.addColorStop(0.5, '#030410');
+  spaceG.addColorStop(1, '#010206');
+  ctx.fillStyle = spaceG;
+  ctx.fillRect(0, 0, 800, 600);
+
+  // Multiple nebulae
   ctx.save();
-  const ng = ctx.createRadialGradient(600, 180, 40, 600, 180, 250);
-  ng.addColorStop(0, 'rgba(40,8,60,0.12)'); ng.addColorStop(1, 'transparent');
-  ctx.fillStyle = ng; ctx.fillRect(0, 0, 800, 600); ctx.restore();
-  // Stars
-  for (let i = 0; i < 100; i++) {
+  // Purple nebula
+  const ng1 = ctx.createRadialGradient(600, 180, 20, 600, 180, 220);
+  ng1.addColorStop(0, 'rgba(60,15,80,0.15)'); ng1.addColorStop(0.5, 'rgba(40,8,60,0.06)'); ng1.addColorStop(1, 'transparent');
+  ctx.fillStyle = ng1; ctx.fillRect(0, 0, 800, 600);
+  // Blue nebula
+  const ng2 = ctx.createRadialGradient(150, 420, 15, 150, 420, 180);
+  ng2.addColorStop(0, 'rgba(10,40,80,0.12)'); ng2.addColorStop(0.5, 'rgba(5,20,50,0.05)'); ng2.addColorStop(1, 'transparent');
+  ctx.fillStyle = ng2; ctx.fillRect(0, 0, 800, 600);
+  // Red/warm nebula (distant)
+  const ng3 = ctx.createRadialGradient(700, 500, 10, 700, 500, 150);
+  ng3.addColorStop(0, 'rgba(60,20,10,0.08)'); ng3.addColorStop(1, 'transparent');
+  ctx.fillStyle = ng3; ctx.fillRect(0, 0, 800, 600);
+  ctx.restore();
+
+  // Parallax stars
+  ATM.renderStars(ctx, sh.t, 0, sh.t * 50, 800, 600);
+
+  // Additional moving stars for speed feel
+  for (let i = 0; i < 40; i++) {
+    const sx = (i * 137) % 800;
+    const sy = (i * 251 + sh.t * 80 * (1 + (i % 3))) % 650 - 25;
+    const trail = 2 + (i % 3) * 3;
     ctx.fillStyle = i % 9 === 0 ? '#aaf' : i % 13 === 0 ? '#ffa' : '#fff';
-    ctx.globalAlpha = 0.12 + (i % 5) * 0.05;
-    ctx.fillRect((i * 137 + sh.t * 10 * (i % 3 + 1)) % 800, (i * 251 + sh.t * 30 * (i % 3 + 1)) % 600, i % 15 === 0 ? 2 : 1, 1);
+    ctx.globalAlpha = 0.15 + (i % 5) * 0.06;
+    ctx.fillRect(sx, sy, 1, trail);
   }
   ctx.globalAlpha = 1;
 
@@ -495,6 +575,10 @@ function runShip(dt) {
   ctx.fillText(`${Math.ceil(sh.hp)}/${sh.mhp}`, 12, 34);
   ctx.fillStyle = '#0ff'; ctx.font = '18px "Orbitron", sans-serif'; ctx.textAlign = 'center';
   ctx.fillText(`${Math.ceil(Math.max(0, sh.mt - sh.t))}с`, 400, 26);
+
+  // Post-processing
+  ATM.renderVignette(ctx, 800, 600);
+  ATM.renderScanlines(ctx, 800, 600);
 
   if (!save.tutorialShown.shoot) {
     ctx.fillStyle = '#0ff'; ctx.font = '12px "Share Tech Mono", monospace';
@@ -560,7 +644,7 @@ function huntInit() {
   const m = getMissionData(save.missionNumber);
   H.th = PLANET_THEMES[m.planet] || PLANET_THEMES.forest;
   H.p = { x: 100, y: H.mh / 2, hp: save.playerMaxHP, mhp: save.playerMaxHP, inv: 0, ls: 0, moving: false };
-  H.bul = []; H.eb = []; H.acd = 0; FX.clear(); camX = 0; camY = 0;
+  H.bul = []; H.eb = []; H.acd = 0; FX.clear(); ATM.clearAmbient(); camX = 0; camY = 0;
 
   // Obstacles
   H.obs = [];
@@ -802,6 +886,11 @@ function runHunt(dt) {
   if (H.en.every(e => !e.alive) && H.boss && !H.boss.alive) { dlgInit(); S = 7; }
 
   camFollow(p.x, p.y, H.mw, H.mh, 0.06);
+
+  // Update atmosphere
+  const huntPlanet = getMissionData(save.missionNumber).planet;
+  ATM.updateAmbient(dt, huntPlanet, camX, camY, H.mw, H.mh);
+
   const sk = FX.getShake();
 
   renderHunt();
@@ -828,21 +917,32 @@ function bossAbility(b) {
 function renderHunt() {
   const p = H.p, th = H.th, aa = aimAngle(p.x, p.y);
   const sk = FX.getShake();
+  const planet = getMissionData(save.missionNumber).planet;
 
-  ctx.fillStyle = th.ground; ctx.fillRect(0, 0, 800, 600);
+  // Sky gradient background (screen space)
+  ATM.renderSky(ctx, planet, 800, 600);
+
+  // Parallax stars behind everything
+  ATM.renderStars(ctx, gt, camX, camY, 800, 600);
+
   ctx.save(); ctx.translate(-camX + sk.x, -camY + sk.y);
 
-  // Ground
+  // Ground base
   ctx.fillStyle = th.ground; ctx.fillRect(0, 0, H.mw, H.mh);
+  // Ground detail tiles
   ctx.fillStyle = th.groundDetail;
   for (let x = 0; x < H.mw; x += 24) for (let y = 0; y < H.mh; y += 24)
     if ((x + y) % 48 === 0) ctx.fillRect(x, y, 24, 24);
 
-  // Ambient lights
-  for (let i = 0; i < 4; i++) {
-    const g = ctx.createRadialGradient((i * 317) % H.mw, (i * 479) % H.mh, 5, (i * 317) % H.mw, (i * 479) % H.mh, 100);
-    g.addColorStop(0, th.accent + '12'); g.addColorStop(1, 'transparent');
-    ctx.fillStyle = g; ctx.fillRect(0, 0, H.mw, H.mh);
+  // Enhanced ground texture
+  ATM.renderGround(ctx, planet, H.mw, H.mh, gt);
+
+  // Ambient lights (bigger, softer)
+  for (let i = 0; i < 6; i++) {
+    const lx = (i * 317 + 50) % H.mw, ly = (i * 479 + 50) % H.mh;
+    const g = ctx.createRadialGradient(lx, ly, 5, lx, ly, 140);
+    g.addColorStop(0, th.accent + '0a'); g.addColorStop(0.5, th.accent + '04'); g.addColorStop(1, 'transparent');
+    ctx.fillStyle = g; ctx.fillRect(lx - 140, ly - 140, 280, 280);
   }
 
   ctx.strokeStyle = th.accent; ctx.lineWidth = 3; ctx.strokeRect(0, 0, H.mw, H.mh);
@@ -928,7 +1028,20 @@ function renderHunt() {
   }
 
   FX.renderWorld(ctx);
+
+  // Ambient floating particles (world space)
+  ATM.renderAmbientWorld(ctx, camX, camY);
+
+  // Dynamic lighting from player, enemies, boss
+  ATM.renderLights(ctx, planet, p.x, p.y, H.en, H.boss, gt);
+
+  // Fog layer (world space, on top of everything)
+  ATM.renderFog(ctx, planet, gt, H.mw, H.mh);
+
   ctx.restore();
+
+  // Post-processing (screen space)
+  ATM.postProcess(ctx, 800, 600, gt);
 
   // HUD
   const wpn = save.weapons[save.activeWeapon], wd = WEAPONS[wpn.type];

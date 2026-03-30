@@ -1,5 +1,6 @@
 // ============================================
 // UI — HUD, buttons, HP bars, notifications, transitions
+// Enhanced with gradients, glow effects, rounded edges
 // ============================================
 
 // --- Notifications ---
@@ -13,17 +14,46 @@ export function renderNotifications(ctx, dt) {
     n.timer -= dt;
     if (n.timer <= 0) { notifications.splice(i, 1); continue; }
     const a = Math.min(1, n.timer);
+    const slideIn = Math.min(1, (3 - n.timer) * 5); // Slide in animation
+    const yOff = i * 40 + (1 - slideIn) * -20;
     ctx.save();
-    ctx.globalAlpha = a;
-    ctx.fillStyle = 'rgba(0,30,30,0.85)';
-    ctx.fillRect(250, 8 + i * 36, 300, 28);
+    ctx.globalAlpha = a * slideIn;
+
+    // Background with gradient
+    const ng = ctx.createLinearGradient(250, 8 + yOff, 550, 8 + yOff);
+    ng.addColorStop(0, 'rgba(0,40,40,0.9)');
+    ng.addColorStop(0.5, 'rgba(0,30,30,0.95)');
+    ng.addColorStop(1, 'rgba(0,40,40,0.9)');
+    ctx.fillStyle = ng;
+    ctx.fillRect(250, 8 + yOff, 300, 30);
+
+    // Glow border
     ctx.strokeStyle = '#0ff';
     ctx.lineWidth = 1;
-    ctx.strokeRect(250, 8 + i * 36, 300, 28);
+    ctx.shadowColor = '#0ff';
+    ctx.shadowBlur = 6;
+    ctx.strokeRect(250, 8 + yOff, 300, 30);
+    ctx.shadowBlur = 0;
+
+    // Corner accents
     ctx.fillStyle = '#0ff';
+    ctx.fillRect(250, 8 + yOff, 8, 1);
+    ctx.fillRect(250, 8 + yOff, 1, 8);
+    ctx.fillRect(542, 8 + yOff, 8, 1);
+    ctx.fillRect(549, 8 + yOff, 1, 8);
+    ctx.fillRect(250, 37 + yOff, 8, 1);
+    ctx.fillRect(250, 30 + yOff, 1, 8);
+    ctx.fillRect(542, 37 + yOff, 8, 1);
+    ctx.fillRect(549, 30 + yOff, 1, 8);
+
+    // Text with glow
+    ctx.fillStyle = '#0ff';
+    ctx.shadowColor = '#0ff';
+    ctx.shadowBlur = 4;
     ctx.font = '12px "Share Tech Mono", monospace';
     ctx.textAlign = 'center';
-    ctx.fillText(n.text, 400, 27 + i * 36);
+    ctx.fillText(n.text, 400, 28 + yOff);
+    ctx.shadowBlur = 0;
     ctx.restore();
   }
 }
@@ -51,46 +81,150 @@ export function renderFade(ctx, dt) {
   ctx.restore();
 }
 
-// --- HP Bar ---
+// --- HP Bar (enhanced with gradient, glow, segmented look) ---
 export function hpBar(ctx, x, y, w, h, cur, max, color = '#0f0') {
   const r = Math.max(0, cur / max);
-  // BG
-  ctx.fillStyle = '#111';
+
+  // Background with depth
+  ctx.fillStyle = '#0a0a0a';
   ctx.fillRect(x, y, w, h);
-  // Fill
+  ctx.fillStyle = '#151515';
+  ctx.fillRect(x + 1, y + 1, w - 2, h - 2);
+
+  // Color based on health
   const c = r > 0.5 ? color : r > 0.25 ? '#ff0' : '#f00';
-  ctx.fillStyle = c;
-  ctx.fillRect(x + 1, y + 1, (w - 2) * r, h - 2);
-  // Highlight
-  ctx.fillStyle = 'rgba(255,255,255,0.1)';
-  ctx.fillRect(x + 1, y + 1, (w - 2) * r, Math.floor(h / 3));
-  // Border
-  ctx.strokeStyle = '#222';
+
+  // Gradient fill
+  const fillW = (w - 2) * r;
+  if (fillW > 0) {
+    const hg = ctx.createLinearGradient(x + 1, y, x + 1, y + h);
+    hg.addColorStop(0, c);
+    hg.addColorStop(0.4, c);
+    hg.addColorStop(0.5, lightenColor(c, 0.3));
+    hg.addColorStop(0.6, c);
+    hg.addColorStop(1, darkenColor(c, 0.4));
+    ctx.fillStyle = hg;
+    ctx.fillRect(x + 1, y + 1, fillW, h - 2);
+
+    // Shine on top
+    ctx.fillStyle = 'rgba(255,255,255,0.15)';
+    ctx.fillRect(x + 1, y + 1, fillW, Math.max(1, Math.floor(h / 3)));
+
+    // Glow at the end of the bar
+    if (h > 4) {
+      ctx.save();
+      ctx.globalAlpha = 0.3;
+      ctx.shadowColor = c;
+      ctx.shadowBlur = 4;
+      ctx.fillStyle = c;
+      ctx.fillRect(x + fillW - 2, y + 1, 3, h - 2);
+      ctx.restore();
+    }
+  }
+
+  // Border with subtle glow
+  ctx.strokeStyle = '#333';
   ctx.lineWidth = 1;
   ctx.strokeRect(x, y, w, h);
+
+  // Segment lines for bigger bars
+  if (w > 60 && h > 4) {
+    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    const segW = w / 10;
+    for (let sx = x + segW; sx < x + w - 1; sx += segW) {
+      ctx.fillRect(sx, y + 1, 1, h - 2);
+    }
+  }
 }
 
-// --- Button ---
+// --- Button (enhanced with gradient, hover glow, corner details) ---
 export function button(ctx, x, y, w, h, text, mx, my) {
   const hover = mx >= x && mx <= x + w && my >= y && my <= y + h;
+
   // Shadow
-  ctx.fillStyle = '#000';
+  ctx.fillStyle = 'rgba(0,0,0,0.5)';
   ctx.fillRect(x + 2, y + 2, w, h);
-  // Body
-  ctx.fillStyle = hover ? '#1a4a4a' : '#0a2828';
+
+  // Body gradient
+  const bg = ctx.createLinearGradient(x, y, x, y + h);
+  if (hover) {
+    bg.addColorStop(0, '#1a5a5a');
+    bg.addColorStop(0.5, '#0e3a3a');
+    bg.addColorStop(1, '#0a2a2a');
+  } else {
+    bg.addColorStop(0, '#0e2e2e');
+    bg.addColorStop(0.5, '#082020');
+    bg.addColorStop(1, '#061818');
+  }
+  ctx.fillStyle = bg;
   ctx.fillRect(x, y, w, h);
-  // Highlight
-  ctx.fillStyle = hover ? 'rgba(0,255,255,0.12)' : 'rgba(0,255,255,0.04)';
-  ctx.fillRect(x + 1, y + 1, w - 2, h / 3);
-  // Border
-  ctx.strokeStyle = hover ? '#0ff' : '#055';
-  ctx.lineWidth = hover ? 2 : 1;
-  ctx.strokeRect(x, y, w, h);
-  // Text
+
+  // Top highlight
+  ctx.fillStyle = hover ? 'rgba(0,255,255,0.15)' : 'rgba(0,255,255,0.05)';
+  ctx.fillRect(x + 1, y + 1, w - 2, Math.floor(h / 3));
+
+  // Border with glow on hover
+  if (hover) {
+    ctx.save();
+    ctx.shadowColor = '#0ff';
+    ctx.shadowBlur = 8;
+    ctx.strokeStyle = '#0ff';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(x, y, w, h);
+    ctx.restore();
+  } else {
+    ctx.strokeStyle = '#066';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x, y, w, h);
+  }
+
+  // Corner accents
+  const cl = 6;
+  ctx.fillStyle = hover ? '#0ff' : '#066';
+  // Top-left
+  ctx.fillRect(x, y, cl, 1);
+  ctx.fillRect(x, y, 1, cl);
+  // Top-right
+  ctx.fillRect(x + w - cl, y, cl, 1);
+  ctx.fillRect(x + w - 1, y, 1, cl);
+  // Bottom-left
+  ctx.fillRect(x, y + h - 1, cl, 1);
+  ctx.fillRect(x, y + h - cl, 1, cl);
+  // Bottom-right
+  ctx.fillRect(x + w - cl, y + h - 1, cl, 1);
+  ctx.fillRect(x + w - 1, y + h - cl, 1, cl);
+
+  // Text with optional glow
   ctx.fillStyle = hover ? '#fff' : '#0cc';
+  if (hover) {
+    ctx.shadowColor = '#0ff';
+    ctx.shadowBlur = 4;
+  }
   ctx.font = '13px "Orbitron", sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(text, x + w / 2, y + h / 2 + 1);
+  ctx.shadowBlur = 0;
   return hover;
+}
+
+// --- Color helpers ---
+function lightenColor(hex, amount) {
+  const r = parseInt(hex.slice(1, 3) || hex.slice(1, 2).repeat(2), 16);
+  const g = parseInt(hex.slice(3, 5) || hex.slice(2, 3).repeat(2), 16);
+  const b = parseInt(hex.slice(5, 7) || hex.slice(3, 4).repeat(2), 16);
+  const nr = Math.min(255, Math.floor(r + (255 - r) * amount));
+  const ng = Math.min(255, Math.floor(g + (255 - g) * amount));
+  const nb = Math.min(255, Math.floor(b + (255 - b) * amount));
+  return `rgb(${nr},${ng},${nb})`;
+}
+
+function darkenColor(hex, amount) {
+  const r = parseInt(hex.slice(1, 3) || hex.slice(1, 2).repeat(2), 16);
+  const g = parseInt(hex.slice(3, 5) || hex.slice(2, 3).repeat(2), 16);
+  const b = parseInt(hex.slice(5, 7) || hex.slice(3, 4).repeat(2), 16);
+  const nr = Math.max(0, Math.floor(r * (1 - amount)));
+  const ng = Math.max(0, Math.floor(g * (1 - amount)));
+  const nb = Math.max(0, Math.floor(b * (1 - amount)));
+  return `rgb(${nr},${ng},${nb})`;
 }

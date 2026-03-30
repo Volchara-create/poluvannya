@@ -25,7 +25,7 @@ export const PLANET_THEMES = {
     obstacles: ['#1a3a1a', '#2a4a1a'],
     decorColor: '#0a3a0a',
     name: 'Лісова планета',
-    decorations: ['tree_small', 'tree_big', 'bush', 'mushroom']
+    decorations: ['tree_small', 'tree_big', 'bush', 'mushroom', 'grass_patch', 'flower', 'vine']
   },
   desert: {
     ground: '#1a1508',
@@ -61,7 +61,7 @@ export const PLANET_THEMES = {
     obstacles: ['#2a1a1a', '#3a2a1a'],
     decorColor: '#f80',
     name: 'Вулканічна планета',
-    decorations: ['lava_pool', 'charred_tree', 'volcano_vent']
+    decorations: ['lava_pool', 'charred_tree', 'volcano_vent', 'lava_crack', 'ember_stone']
   },
   ruins: {
     ground: '#0a0a0d',
@@ -70,7 +70,7 @@ export const PLANET_THEMES = {
     obstacles: ['#2a2a3a', '#3a3a4a'],
     decorColor: '#4a4a5a',
     name: 'Руїни',
-    decorations: ['pillar', 'broken_wall', 'terminal', 'debris']
+    decorations: ['pillar', 'broken_wall', 'terminal', 'debris', 'rune_stone', 'ancient_lamp']
   },
   station: {
     ground: '#080810',
@@ -341,6 +341,110 @@ export function drawDecoration(ctx, x, y, type, theme) {
       ctx.globalAlpha = 0.3 + Math.sin(Date.now() / 600 + x) * 0.2;
       ctx.fillRect(-3, -3, 6, 6);
       break;
+    // --- New forest decorations ---
+    case 'grass_patch':
+      ctx.fillStyle = '#1a4a1a';
+      for (let i = -4; i < 5; i += 2) {
+        const h = 4 + Math.abs(i) * 0.8 + Math.sin(Date.now() / 600 + i) * 1.5;
+        ctx.fillRect(i, -h, 1, h);
+      }
+      break;
+    case 'flower':
+      // Stem
+      ctx.fillStyle = '#1a5a1a';
+      ctx.fillRect(-1, -4, 2, 10);
+      // Petals
+      const flowerColors = ['#f4a', '#fa4', '#4af', '#ff4', '#f44'];
+      ctx.fillStyle = flowerColors[Math.abs(Math.floor(x * 0.1)) % flowerColors.length];
+      ctx.fillRect(-3, -7, 6, 5);
+      ctx.fillRect(-4, -6, 8, 3);
+      // Center
+      ctx.fillStyle = '#ff0';
+      ctx.fillRect(-1, -5, 2, 2);
+      break;
+    case 'vine':
+      ctx.strokeStyle = '#1a5a2a';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(0, -12);
+      ctx.quadraticCurveTo(6, -4, 0, 4);
+      ctx.quadraticCurveTo(-6, 10, 2, 16);
+      ctx.stroke();
+      // Leaves on vine
+      ctx.fillStyle = '#2a6a2a';
+      ctx.fillRect(4, -6, 4, 3);
+      ctx.fillRect(-6, 6, 4, 3);
+      break;
+
+    // --- New volcanic decorations ---
+    case 'lava_crack':
+      ctx.strokeStyle = '#f40';
+      ctx.lineWidth = 2;
+      ctx.globalAlpha = 0.5 + Math.sin(Date.now() / 400) * 0.3;
+      ctx.beginPath();
+      ctx.moveTo(-8, -2);
+      ctx.lineTo(-3, 2);
+      ctx.lineTo(0, -1);
+      ctx.lineTo(4, 3);
+      ctx.lineTo(8, 0);
+      ctx.stroke();
+      // Glow
+      ctx.strokeStyle = '#ff0';
+      ctx.lineWidth = 1;
+      ctx.globalAlpha = 0.2;
+      ctx.beginPath();
+      ctx.moveTo(-8, -2);
+      ctx.lineTo(-3, 2);
+      ctx.lineTo(0, -1);
+      ctx.lineTo(4, 3);
+      ctx.lineTo(8, 0);
+      ctx.stroke();
+      break;
+    case 'ember_stone':
+      ctx.fillStyle = '#2a1a0a';
+      ctx.fillRect(-6, -5, 12, 10);
+      ctx.fillRect(-4, -7, 8, 3);
+      // Glowing veins
+      ctx.fillStyle = '#f80';
+      ctx.globalAlpha = 0.4 + Math.sin(Date.now() / 300) * 0.2;
+      ctx.fillRect(-4, -3, 1, 6);
+      ctx.fillRect(1, -5, 1, 4);
+      ctx.fillRect(-2, 0, 6, 1);
+      break;
+
+    // --- New ruins decorations ---
+    case 'rune_stone':
+      ctx.fillStyle = '#3a3a4a';
+      ctx.fillRect(-5, -8, 10, 14);
+      ctx.fillRect(-3, -10, 6, 3);
+      // Glowing runes
+      ctx.fillStyle = '#0af';
+      ctx.shadowColor = '#0af';
+      ctx.shadowBlur = 3;
+      ctx.globalAlpha = 0.4 + Math.sin(Date.now() / 500) * 0.2;
+      ctx.fillRect(-3, -6, 6, 1);
+      ctx.fillRect(-1, -6, 1, 8);
+      ctx.fillRect(-3, 0, 6, 1);
+      ctx.shadowBlur = 0;
+      break;
+    case 'ancient_lamp':
+      // Pole
+      ctx.fillStyle = '#3a3a4a';
+      ctx.fillRect(-1, -4, 2, 12);
+      // Lamp
+      ctx.fillStyle = '#2a2a3a';
+      ctx.fillRect(-3, -8, 6, 5);
+      // Flame
+      ctx.fillStyle = '#0af';
+      ctx.shadowColor = '#0af';
+      ctx.shadowBlur = 6;
+      ctx.globalAlpha = 0.5 + Math.sin(Date.now() / 200) * 0.3;
+      ctx.fillRect(-2, -12, 4, 5);
+      ctx.fillStyle = '#0ff';
+      ctx.fillRect(-1, -11, 2, 3);
+      ctx.shadowBlur = 0;
+      break;
+
     default:
       ctx.fillStyle = c;
       ctx.fillRect(-4, -4, 8, 8);
