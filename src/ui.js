@@ -209,22 +209,19 @@ export function button(ctx, x, y, w, h, text, mx, my) {
 }
 
 // --- Color helpers ---
+function parseHex(hex) {
+  hex = hex.replace('#', '');
+  // Handle 3-char hex (#0f0 -> 00ff00)
+  if (hex.length === 3) hex = hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2];
+  return [parseInt(hex.slice(0,2),16), parseInt(hex.slice(2,4),16), parseInt(hex.slice(4,6),16)];
+}
+
 function lightenColor(hex, amount) {
-  const r = parseInt(hex.slice(1, 3) || hex.slice(1, 2).repeat(2), 16);
-  const g = parseInt(hex.slice(3, 5) || hex.slice(2, 3).repeat(2), 16);
-  const b = parseInt(hex.slice(5, 7) || hex.slice(3, 4).repeat(2), 16);
-  const nr = Math.min(255, Math.floor(r + (255 - r) * amount));
-  const ng = Math.min(255, Math.floor(g + (255 - g) * amount));
-  const nb = Math.min(255, Math.floor(b + (255 - b) * amount));
-  return `rgb(${nr},${ng},${nb})`;
+  const [r,g,b] = parseHex(hex);
+  return `rgb(${Math.min(255,Math.floor(r+(255-r)*amount))},${Math.min(255,Math.floor(g+(255-g)*amount))},${Math.min(255,Math.floor(b+(255-b)*amount))})`;
 }
 
 function darkenColor(hex, amount) {
-  const r = parseInt(hex.slice(1, 3) || hex.slice(1, 2).repeat(2), 16);
-  const g = parseInt(hex.slice(3, 5) || hex.slice(2, 3).repeat(2), 16);
-  const b = parseInt(hex.slice(5, 7) || hex.slice(3, 4).repeat(2), 16);
-  const nr = Math.max(0, Math.floor(r * (1 - amount)));
-  const ng = Math.max(0, Math.floor(g * (1 - amount)));
-  const nb = Math.max(0, Math.floor(b * (1 - amount)));
-  return `rgb(${nr},${ng},${nb})`;
+  const [r,g,b] = parseHex(hex);
+  return `rgb(${Math.max(0,Math.floor(r*(1-amount)))},${Math.max(0,Math.floor(g*(1-amount)))},${Math.max(0,Math.floor(b*(1-amount)))})`;
 }

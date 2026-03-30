@@ -518,7 +518,7 @@ function runShip(dt) {
 
   // Shoot
   sh.ls += dt * 1000;
-  if ((keys['Space']||mDown) && sh.ls > 350) {
+  if ((keys['Space']||mDown) && sh.ls > 550) {
     sh.ls = 0;
     for (let i = 0; i < sh.bc; i++) sh.bul.push({ x: sh.x + (i - (sh.bc - 1) / 2) * 12, y: sh.y - 18, s: 10 });
     playSound('shoot_pistol'); FX.muzzleFlash(sh.x, sh.y - 20, -Math.PI / 2);
@@ -1618,12 +1618,18 @@ function loop(t) {
   FX.update(dt);
   if (save && S > 1) updateGlitches(dt, save.missionNumber);
 
-  switch (S) {
-    case 0: slotSelect(dt); break; case 1: runIntro(dt); break; case 2: runHQ(dt); break;
-    case 3: runBrief(dt); break; case 4: runShip(dt); break; case 5: runLand(dt); break;
-    case 6: runHunt(dt); break; case 7: runDlg(dt); break; case 8: runRwd(dt); break;
-    case 9: runShop(dt); break; case 10: runPuzzle(dt); break; case 11: runEnd(dt); break;
-    case 12: runDeath(dt); break;
+  try {
+    switch (S) {
+      case 0: slotSelect(dt); break; case 1: runIntro(dt); break; case 2: runHQ(dt); break;
+      case 3: runBrief(dt); break; case 4: runShip(dt); break; case 5: runLand(dt); break;
+      case 6: runHunt(dt); break; case 7: runDlg(dt); break; case 8: runRwd(dt); break;
+      case 9: runShop(dt); break; case 10: runPuzzle(dt); break; case 11: runEnd(dt); break;
+      case 12: runDeath(dt); break;
+    }
+  } catch(e) {
+    console.error('Game error in state ' + S + ':', e);
+    ctx.fillStyle = '#f44'; ctx.font = '14px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('Error: ' + e.message, 400, 300);
   }
 
   if (save && S > 1) renderGlitchEffects(ctx);
