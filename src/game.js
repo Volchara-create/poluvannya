@@ -207,12 +207,32 @@ function introInit() {
 }
 function runIntro(dt) {
   canvas.style.cursor = 'default';
-  ctx.fillStyle = '#000'; ctx.fillRect(0, 0, 800, 600);
+  // Cinematic dark background
+  const introBg = ctx.createRadialGradient(400, 300, 30, 400, 300, 500);
+  introBg.addColorStop(0, '#050a10');
+  introBg.addColorStop(1, '#010204');
+  ctx.fillStyle = introBg; ctx.fillRect(0, 0, 800, 600);
+  ATM.renderStars(ctx, gt * 0.4, 0, 0, 800, 600);
+
   if (intro.phase === 0) {
     intro.tw.update(dt);
-    ctx.fillStyle = '#0ff'; ctx.font = '15px "Share Tech Mono", monospace'; ctx.textAlign = 'center';
-    for (let i = 0; i < intro.idx; i++) { ctx.globalAlpha = 0.45; ctx.fillText(intro.lines[i], 400, 200 + i * 30); }
-    ctx.globalAlpha = 1; ctx.fillText(intro.tw.text, 400, 200 + intro.idx * 30);
+    ctx.textAlign = 'center';
+    for (let i = 0; i < intro.idx; i++) {
+      ctx.globalAlpha = 0.3 + (i / intro.lines.length) * 0.15;
+      ctx.fillStyle = '#0aa';
+      ctx.font = '15px "Share Tech Mono", monospace';
+      ctx.fillText(intro.lines[i], 400, 200 + i * 34);
+    }
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = '#0ff'; ctx.font = '15px "Share Tech Mono", monospace';
+    ctx.shadowColor = '#0ff'; ctx.shadowBlur = 6;
+    ctx.fillText(intro.tw.text, 400, 200 + intro.idx * 34);
+    ctx.shadowBlur = 0;
+    // Blinking cursor
+    if (!intro.tw.done && Math.floor(gt * 3) % 2) {
+      const tw = ctx.measureText(intro.tw.text).width;
+      ctx.fillRect(400 + tw / 2 + 3, 188 + intro.idx * 34, 8, 2);
+    }
     if (intro.tw.done) {
       if (intro.idx < intro.lines.length - 1) { intro.tw._waited += dt; if (intro.tw._waited > 0.6) { intro.idx++; intro.tw = new TypeWriter(intro.lines[intro.idx], 45); } }
       else intro.phase = 1;
@@ -220,21 +240,32 @@ function runIntro(dt) {
     if (justPressed['Escape'] || justPressed['Enter']) intro.phase = 1;
   }
   if (intro.phase === 1) {
-    ctx.fillStyle = '#0ff'; ctx.font = '15px "Share Tech Mono", monospace'; ctx.textAlign = 'center';
-    for (let i = 0; i < intro.lines.length; i++) { ctx.globalAlpha = 0.35; ctx.fillText(intro.lines[i], 400, 200 + i * 30); }
+    ctx.fillStyle = '#0aa'; ctx.font = '15px "Share Tech Mono", monospace'; ctx.textAlign = 'center';
+    for (let i = 0; i < intro.lines.length; i++) { ctx.globalAlpha = 0.35; ctx.fillText(intro.lines[i], 400, 195 + i * 34); }
     ctx.globalAlpha = 1;
-    // Pixel pistol big
-    ctx.save(); ctx.translate(400, 415); ctx.scale(4, 4);
-    ctx.fillStyle = '#333'; ctx.fillRect(-4, 1, 4, 4);
-    ctx.fillStyle = '#555'; ctx.fillRect(-2, -2, 10, 5);
-    ctx.fillStyle = '#777'; ctx.fillRect(7, -1, 3, 3);
-    ctx.fillStyle = '#222'; ctx.fillRect(8, 0, 2, 1);
+
+    // Pixel pistol with glow
+    ctx.save(); ctx.translate(400, 405); ctx.scale(4, 4);
+    ctx.shadowColor = '#0ff'; ctx.shadowBlur = 2;
+    ctx.fillStyle = '#444'; ctx.fillRect(-4, 1, 5, 5);
+    ctx.fillStyle = '#666'; ctx.fillRect(-2, -3, 14, 6);
+    ctx.fillStyle = '#888'; ctx.fillRect(10, -2, 6, 4);
+    ctx.fillStyle = '#222'; ctx.fillRect(14, -1, 2, 2);
+    ctx.fillStyle = '#555'; ctx.fillRect(0, -1, 4, 2);
     ctx.restore();
-    ctx.fillStyle = '#088'; ctx.font = '13px "Share Tech Mono", monospace';
-    ctx.fillText('[ Отримано: Пістолет ]', 400, 460);
-    btn(300, 495, 200, 40, '[ Почати ]');
-    if (btnClick(300, 495, 200, 40) || justPressed['Enter']) { playSound('click'); S = 2; }
+
+    // Received text with glow
+    ctx.save();
+    ctx.shadowColor = '#0ff'; ctx.shadowBlur = 8;
+    ctx.fillStyle = '#0cc'; ctx.font = '13px "Share Tech Mono", monospace';
+    ctx.fillText('[ Отримано: Пістолет ]', 400, 450);
+    ctx.restore();
+
+    btn(300, 490, 200, 40, '[ Почати ]');
+    if (btnClick(300, 490, 200, 40) || justPressed['Enter']) { playSound('click'); S = 2; }
   }
+
+  ATM.renderVignette(ctx, 800, 600);
 }
 
 // ============================================
@@ -1245,28 +1276,90 @@ function dlgInit() {
 }
 function runDlg(dt) {
   canvas.style.cursor = 'default';
-  ctx.fillStyle = '#000'; ctx.fillRect(0, 0, 800, 600);
+
+  // Atmospheric dark background
+  const dlgBg = ctx.createRadialGradient(400, 300, 50, 400, 300, 450);
+  dlgBg.addColorStop(0, '#0a0508');
+  dlgBg.addColorStop(1, '#020102');
+  ctx.fillStyle = dlgBg; ctx.fillRect(0, 0, 800, 600);
+
+  // Subtle red particles floating up
+  ctx.save();
+  for (let i = 0; i < 15; i++) {
+    const px = (i * 53 + gt * 20) % 800;
+    const py = 600 - ((i * 89 + gt * 30) % 650);
+    ctx.globalAlpha = 0.08 + Math.sin(gt * 2 + i) * 0.04;
+    ctx.fillStyle = i % 3 === 0 ? '#f44' : '#a22';
+    ctx.fillRect(px, py, 1, 1);
+  }
+  ctx.restore();
+
   dlg.tw.update(dt);
-  ctx.save(); ctx.translate(400, 160); drawDefeatedBoss(ctx, gt); ctx.restore();
-  ctx.fillStyle = '#555'; ctx.font = '10px "Share Tech Mono", monospace'; ctx.textAlign = 'center'; ctx.fillText('ЦІЛЬ ЗНЕШКОДЖЕНА', 400, 210);
-  for (let i = 0; i < dlg.idx; i++) { ctx.fillStyle = i === dlg.lines.length - 1 ? '#f0f' : '#444'; ctx.font = '12px "Share Tech Mono", monospace';
-    ctx.fillText(dlg.lines[i], 400, 260 + i * 22); }
+
+  // Defeated boss with glow
+  ctx.save();
+  ctx.translate(400, 155);
+  // Red aura
+  ctx.globalAlpha = 0.06 + Math.sin(gt * 2) * 0.02;
+  const bossAura = ctx.createRadialGradient(0, 0, 10, 0, 0, 60);
+  bossAura.addColorStop(0, '#f44');
+  bossAura.addColorStop(1, 'transparent');
+  ctx.fillStyle = bossAura;
+  ctx.beginPath(); ctx.arc(0, 0, 60, 0, Math.PI * 2); ctx.fill();
+  ctx.globalAlpha = 1;
+  drawDefeatedBoss(ctx, gt);
+  ctx.restore();
+
+  // Status text
+  ctx.save();
+  ctx.fillStyle = '#555'; ctx.shadowColor = '#f44'; ctx.shadowBlur = 3;
+  ctx.font = '10px "Share Tech Mono", monospace'; ctx.textAlign = 'center';
+  ctx.fillText('ЦІЛЬ ЗНЕШКОДЖЕНА', 400, 208);
+  ctx.restore();
+
+  // Dialogue box background
+  ctx.fillStyle = 'rgba(0,0,0,0.4)';
+  ctx.fillRect(120, 235, 560, dlg.lines.length * 24 + 30);
+  ctx.strokeStyle = '#333';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(120, 235, 560, dlg.lines.length * 24 + 30);
+
+  // Previous lines
+  for (let i = 0; i < dlg.idx; i++) {
+    ctx.fillStyle = i === dlg.lines.length - 1 ? '#f0f' : '#555';
+    ctx.font = '12px "Share Tech Mono", monospace'; ctx.textAlign = 'center';
+    ctx.fillText(dlg.lines[i], 400, 260 + i * 24);
+  }
+
+  // Current line with glitch effect
   const txt = dlg.tw.text, sec = dlg.idx === dlg.lines.length - 1;
   ctx.font = sec ? '15px "Share Tech Mono", monospace' : '13px "Share Tech Mono", monospace';
   let xp = 400 - ctx.measureText(txt).width / 2;
   for (let i = 0; i < txt.length; i++) {
     const gl = sec || GW.some(w => { const j = txt.toLowerCase().indexOf(w); return j !== -1 && i >= j && i < j + w.length; });
-    if (gl && Math.random() > 0.65) { ctx.fillStyle = '#f0f'; ctx.globalAlpha = 0.4 + Math.random() * 0.5; }
-    else { ctx.fillStyle = sec ? '#f0f' : '#bbb'; ctx.globalAlpha = 1; }
-    ctx.fillText(txt[i], xp, 260 + dlg.idx * 22); xp += ctx.measureText(txt[i]).width;
+    if (gl && Math.random() > 0.6) {
+      ctx.fillStyle = '#f0f'; ctx.globalAlpha = 0.4 + Math.random() * 0.5;
+      ctx.shadowColor = '#f0f'; ctx.shadowBlur = 4;
+      // Slight position jitter
+      const jx = (Math.random() - 0.5) * 2;
+      ctx.fillText(txt[i], xp + jx, 260 + dlg.idx * 24);
+      ctx.shadowBlur = 0;
+    } else {
+      ctx.fillStyle = sec ? '#f0f' : '#ccc'; ctx.globalAlpha = 1;
+      ctx.fillText(txt[i], xp, 260 + dlg.idx * 24);
+    }
+    xp += ctx.measureText(txt[i]).width;
   }
   ctx.globalAlpha = 1;
+
   if (dlg.tw.done) {
     if (dlg.idx < dlg.lines.length - 1) { dlg.tw._waited += dt; if (dlg.tw._waited > 0.9) { dlg.idx++; dlg.tw = new TypeWriter(dlg.lines[dlg.idx], 30); } }
     else { dlg.done = true; btn(300, 520, 200, 36, "[ Ув'язнити ]");
       if (btnClick(300, 520, 200, 36) || justPressed['Enter']) { playSound('click'); rwdInit(); S = 8; } }
   }
   if (justPressed['Space'] && !dlg.tw.done) { dlg.tw.skip(); save.crueltyRating += 1; }
+
+  ATM.renderVignette(ctx, 800, 600);
 }
 
 // ============================================
@@ -1276,10 +1369,30 @@ let rwd = { t: 0, given: false };
 function rwdInit() { rwd = { t: 0, given: false }; }
 function runRwd(dt) {
   canvas.style.cursor = 'default';
-  ctx.fillStyle = '#000'; ctx.fillRect(0, 0, 800, 600); rwd.t += dt;
+  // Dark background with green tint
+  const rwdBg = ctx.createRadialGradient(400, 250, 40, 400, 300, 400);
+  rwdBg.addColorStop(0, '#041a04');
+  rwdBg.addColorStop(1, '#010802');
+  ctx.fillStyle = rwdBg; ctx.fillRect(0, 0, 800, 600);
+  ATM.renderStars(ctx, gt * 0.5, 0, 0, 800, 600);
+  rwd.t += dt;
   const m = getMissionData(save.missionNumber);
-  ctx.fillStyle = '#0f0'; ctx.font = '24px "Orbitron", sans-serif'; ctx.textAlign = 'center'; ctx.fillText('ЦІЛЬ ЗАХОПЛЕНА', 400, 190);
-  ctx.fillStyle = '#ff0'; ctx.font = '20px "Orbitron", sans-serif'; ctx.fillText(`+${m.reward} cr`, 400, 240);
+
+  // Title with success glow
+  ctx.save();
+  ctx.shadowColor = '#0f0'; ctx.shadowBlur = 20;
+  ctx.fillStyle = '#0f0'; ctx.font = '24px "Orbitron", sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('ЦІЛЬ ЗАХОПЛЕНА', 400, 185);
+  ctx.restore();
+
+  // Credits with animation
+  const creditScale = Math.min(1, rwd.t * 3);
+  ctx.save();
+  ctx.globalAlpha = creditScale;
+  ctx.shadowColor = '#ff0'; ctx.shadowBlur = 10;
+  ctx.fillStyle = '#ff0'; ctx.font = `${Math.floor(20 * creditScale)}px "Orbitron", sans-serif`;
+  ctx.textAlign = 'center'; ctx.fillText(`+${m.reward} cr`, 400, 235);
+  ctx.restore();
   if (!rwd.given && rwd.t > 0.5) {
     rwd.given = true; save.credits += m.reward; save.missionNumber++; updateBaseLevel();
     if (Math.random() < 0.12) { const drops = ['sword','machinegun','sniper'].filter(w => !save.weapons.find(sw => sw.type === w));
@@ -1309,14 +1422,40 @@ function deathInit(t) {
 }
 function runDeath(dt) {
   canvas.style.cursor = 'default';
-  ctx.fillStyle = '#000'; ctx.fillRect(0, 0, 800, 600);
+  // Dark red background
+  const deathBg = ctx.createRadialGradient(400, 300, 30, 400, 300, 400);
+  deathBg.addColorStop(0, '#1a0505');
+  deathBg.addColorStop(1, '#050101');
+  ctx.fillStyle = deathBg; ctx.fillRect(0, 0, 800, 600);
+
+  // Red particles drifting
+  for (let i = 0; i < 12; i++) {
+    ctx.globalAlpha = 0.04 + Math.sin(gt + i) * 0.02;
+    ctx.fillStyle = '#f44';
+    ctx.fillRect((i * 67 + gt * 8) % 800, (i * 97 + gt * 5) % 600, 1, 1);
+  }
+  ctx.globalAlpha = 1;
+
+  // Title with red glow
+  ctx.save();
+  ctx.shadowColor = '#f44'; ctx.shadowBlur = 20;
   ctx.fillStyle = '#f44'; ctx.font = '26px "Orbitron", sans-serif'; ctx.textAlign = 'center';
-  ctx.fillText(dth.t === 'ship' ? 'КОРАБЕЛЬ ЗНИЩЕНО' : 'МІСІЮ ПРОВАЛЕНО', 400, 190);
-  ctx.fillStyle = '#888'; ctx.font = '13px "Share Tech Mono", monospace';
+  ctx.fillText(dth.t === 'ship' ? 'КОРАБЕЛЬ ЗНИЩЕНО' : 'МІСІЮ ПРОВАЛЕНО', 400, 185);
+  ctx.restore();
+
+  // Separator line
+  ctx.strokeStyle = '#f44'; ctx.globalAlpha = 0.2; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(250, 210); ctx.lineTo(550, 210); ctx.stroke();
+  ctx.globalAlpha = 1;
+
+  ctx.fillStyle = '#999'; ctx.font = '13px "Share Tech Mono", monospace';
   ctx.fillText(`Втрачено: -${dth.cl} cr`, 400, 260);
   if (dth.wl) { ctx.fillStyle = '#f80'; ctx.fillText('Рівень зброї -1', 400, 290); }
+
   btn(300, 390, 200, 38, '[ До штабу ]');
   if (btnClick(300, 390, 200, 38) || justPressed['Enter']) { playSound('click'); S = 2; }
+
+  ATM.renderVignette(ctx, 800, 600);
 }
 
 // ============================================
@@ -1325,10 +1464,26 @@ function runDeath(dt) {
 let shopCat = 'hangar';
 function runShop(dt) {
   canvas.style.cursor = 'default';
-  ctx.fillStyle = '#000'; ctx.fillRect(0, 0, 800, 600);
+  // Shop background with tint based on category
+  const tintColors = { hangar: '#001518', wardrobe: '#0f0510', arsenal: '#180505', lab: '#0a0518' };
+  const tint = tintColors[shopCat] || '#001518';
+  const shopBg = ctx.createLinearGradient(0, 0, 0, 600);
+  shopBg.addColorStop(0, tint); shopBg.addColorStop(1, '#020204');
+  ctx.fillStyle = shopBg; ctx.fillRect(0, 0, 800, 600);
+
+  // Title with category-specific color
+  const titleColors = { hangar: '#0ff', wardrobe: '#f0a', arsenal: '#f44', lab: '#a0f' };
   const titles = { hangar: 'АНГАР', wardrobe: 'ГАРДЕРОБ', arsenal: 'АРСЕНАЛ', lab: 'ЛАБОРАТОРІЯ' };
-  ctx.fillStyle = '#0ff'; ctx.font = '18px "Orbitron", sans-serif'; ctx.textAlign = 'center'; ctx.fillText(titles[shopCat], 400, 32);
+  ctx.save();
+  ctx.shadowColor = titleColors[shopCat]; ctx.shadowBlur = 12;
+  ctx.fillStyle = titleColors[shopCat]; ctx.font = '18px "Orbitron", sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText(titles[shopCat], 400, 32);
+  ctx.restore();
+  // Credits
+  ctx.save();
+  ctx.shadowColor = '#ff0'; ctx.shadowBlur = 4;
   ctx.fillStyle = '#ff0'; ctx.font = '11px "Share Tech Mono", monospace'; ctx.fillText(`${save.credits} cr`, 400, 52);
+  ctx.restore();
   let y = 80;
   const si = (name, lv, max, prices, fn) => {
     ctx.fillStyle = '#777'; ctx.font = '12px "Share Tech Mono", monospace'; ctx.textAlign = 'left'; ctx.fillText(name, 45, y);
