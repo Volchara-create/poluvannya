@@ -109,24 +109,75 @@ function slotSelect(dt) {
   ctx.fillStyle = '#077'; ctx.font = '12px "Share Tech Mono", monospace';
   ctx.textAlign = 'center'; ctx.fillText('Космічний Мисливець  ·  Broken Reality', 400, 95);
 
+  // Animated decorative line
+  ctx.strokeStyle = '#0ff'; ctx.globalAlpha = 0.15;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(100, 108); ctx.lineTo(700, 108);
+  ctx.stroke();
+  // Moving dot on line
+  ctx.fillStyle = '#0ff'; ctx.globalAlpha = 0.5;
+  const dotX = 100 + ((gt * 80) % 600);
+  ctx.fillRect(dotX, 107, 4, 2);
+  ctx.globalAlpha = 1;
+
   for (let i = 0; i < 3; i++) {
     const x = 150, y = 125 + i * 145, w = 500, h = 125, s = saves[i];
     const hov = mx >= x && mx <= x + w && my >= y && my <= y + h;
-    ctx.fillStyle = hov ? 'rgba(0,255,255,0.05)' : 'rgba(0,20,20,0.3)';
+
+    // Slot background with gradient
+    const slotGrad = ctx.createLinearGradient(x, y, x + w, y + h);
+    slotGrad.addColorStop(0, hov ? 'rgba(0,40,40,0.2)' : 'rgba(0,15,15,0.3)');
+    slotGrad.addColorStop(0.5, hov ? 'rgba(0,30,30,0.15)' : 'rgba(0,10,10,0.2)');
+    slotGrad.addColorStop(1, hov ? 'rgba(0,40,40,0.2)' : 'rgba(0,15,15,0.3)');
+    ctx.fillStyle = slotGrad;
     ctx.fillRect(x, y, w, h);
-    ctx.strokeStyle = hov ? '#0ff' : '#033'; ctx.lineWidth = hov ? 2 : 1;
-    ctx.strokeRect(x, y, w, h);
+
+    // Border with glow on hover
+    if (hov) {
+      ctx.save();
+      ctx.shadowColor = '#0ff'; ctx.shadowBlur = 10;
+      ctx.strokeStyle = '#0ff'; ctx.lineWidth = 1.5;
+      ctx.strokeRect(x, y, w, h);
+      ctx.restore();
+    } else {
+      ctx.strokeStyle = '#044'; ctx.lineWidth = 1;
+      ctx.strokeRect(x, y, w, h);
+    }
+
+    // Corner accents
+    const cl = 10;
+    ctx.fillStyle = hov ? '#0ff' : '#044';
+    ctx.fillRect(x, y, cl, 1); ctx.fillRect(x, y, 1, cl);
+    ctx.fillRect(x + w - cl, y, cl, 1); ctx.fillRect(x + w - 1, y, 1, cl);
+    ctx.fillRect(x, y + h - 1, cl, 1); ctx.fillRect(x, y + h - cl, 1, cl);
+    ctx.fillRect(x + w - cl, y + h - 1, cl, 1); ctx.fillRect(x + w - 1, y + h - cl, 1, cl);
+
+    // Slot number with indicator
+    ctx.fillStyle = hov ? '#0ff' : '#066';
+    ctx.fillRect(x + 8, y + 12, 3, 16);
     ctx.textAlign = 'left'; ctx.fillStyle = '#0ff'; ctx.font = '15px "Orbitron", sans-serif';
-    ctx.fillText(`СЛОТ ${i + 1}`, x + 16, y + 28);
+    ctx.fillText(`СЛОТ ${i + 1}`, x + 18, y + 28);
+
     if (s) {
-      ctx.fillStyle = '#777'; ctx.font = '12px "Share Tech Mono", monospace';
-      ctx.fillText(`Місія: ${s.missionNumber + 1}  ·  ${s.credits} cr  ·  База Lv.${s.baseLevel}`, x + 16, y + 52);
+      ctx.fillStyle = '#888'; ctx.font = '12px "Share Tech Mono", monospace';
+      ctx.fillText(`Місія: ${s.missionNumber + 1}  ·  ${s.credits} cr  ·  База Lv.${s.baseLevel}`, x + 18, y + 52);
       const wp = s.weapons[s.activeWeapon];
-      if (wp) ctx.fillText(`Зброя: ${WEAPONS[wp.type].name} Lv.${wp.level}`, x + 16, y + 70);
+      if (wp) ctx.fillText(`Зброя: ${WEAPONS[wp.type].name} Lv.${wp.level}`, x + 18, y + 70);
+
+      // Progress bar
+      const prog = Math.min(1, s.missionNumber / 10);
+      ctx.fillStyle = '#111'; ctx.fillRect(x + 18, y + 82, 200, 4);
+      const pgc = ctx.createLinearGradient(x + 18, 0, x + 18 + 200 * prog, 0);
+      pgc.addColorStop(0, '#0ff'); pgc.addColorStop(1, '#088');
+      ctx.fillStyle = pgc; ctx.fillRect(x + 18, y + 82, 200 * prog, 4);
+      ctx.fillStyle = '#555'; ctx.font = '9px "Share Tech Mono", monospace';
+      ctx.fillText(`${Math.floor(prog * 100)}%`, x + 225, y + 87);
+
       // Del btn
       const dx = x + w - 85, dy = y + h - 32;
       const dh = mx >= dx && mx <= dx + 70 && my >= dy && my <= dy + 22;
-      ctx.fillStyle = dh ? 'rgba(255,0,0,0.12)' : 'rgba(255,0,0,0.03)';
+      ctx.fillStyle = dh ? 'rgba(255,0,0,0.15)' : 'rgba(255,0,0,0.03)';
       ctx.fillRect(dx, dy, 70, 22);
       ctx.strokeStyle = dh ? '#f44' : '#400'; ctx.strokeRect(dx, dy, 70, 22);
       ctx.fillStyle = dh ? '#f88' : '#600'; ctx.font = '10px "Share Tech Mono", monospace';
@@ -364,21 +415,41 @@ let curM = null;
 function briefInit() { curM = getMissionData(save.missionNumber); }
 function runBrief(dt) {
   canvas.style.cursor = 'default';
-  ctx.fillStyle = '#000'; ctx.fillRect(0, 0, 800, 600);
+  // Background
+  ATM.renderSky(ctx, curM?.planet || 'forest', 800, 600);
+  ATM.renderStars(ctx, gt, 0, 0, 800, 600);
+  ATM.renderNebulae(ctx, curM?.planet || 'forest', gt, 800, 600);
   if (!curM) return;
+
+  // Mission header with glow
+  ctx.save();
+  ctx.shadowColor = '#0ff'; ctx.shadowBlur = 15;
   ctx.fillStyle = '#0ff'; ctx.font = '20px "Orbitron", sans-serif'; ctx.textAlign = 'center';
-  ctx.fillText(`МІСІЯ ${save.missionNumber + 1}`, 400, 60);
-  ctx.fillStyle = '#fff'; ctx.font = '17px "Orbitron", sans-serif';
-  ctx.fillText(curM.name, 400, 95);
-  // Planet preview
+  ctx.fillText(`МІСІЯ ${save.missionNumber + 1}`, 400, 55);
+  ctx.restore();
+  ctx.fillStyle = '#fff'; ctx.font = '17px "Orbitron", sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText(curM.name, 400, 88);
+
+  // Planet preview — bigger, with atmosphere
   const th = PLANET_THEMES[curM.planet] || PLANET_THEMES.forest;
-  ctx.fillStyle = th.ground; ctx.fillRect(300, 125, 200, 90);
-  ctx.strokeStyle = th.accent; ctx.strokeRect(300, 125, 200, 90);
+  const pvx = 250, pvy = 110, pvw = 300, pvh = 110;
+  // Planet preview background
+  const pvg = ctx.createLinearGradient(pvx, pvy, pvx, pvy + pvh);
+  pvg.addColorStop(0, th.ground); pvg.addColorStop(1, th.groundDetail);
+  ctx.fillStyle = pvg; ctx.fillRect(pvx, pvy, pvw, pvh);
   // Decorations in preview
   const decTypes = th.decorations;
-  for (let i = 0; i < 6; i++) drawDecoration(ctx, 320 + i * 30, 185, decTypes[i % decTypes.length], th);
-  ctx.fillStyle = th.decorColor; ctx.font = '9px "Share Tech Mono", monospace'; ctx.textAlign = 'center';
-  ctx.fillText(th.name, 400, 230);
+  for (let i = 0; i < 8; i++) drawDecoration(ctx, pvx + 20 + i * 35, pvy + pvh - 20, decTypes[i % decTypes.length], th);
+  // Preview border with glow
+  ctx.save();
+  ctx.shadowColor = th.accent; ctx.shadowBlur = 5;
+  ctx.strokeStyle = th.accent; ctx.lineWidth = 1;
+  ctx.strokeRect(pvx, pvy, pvw, pvh);
+  ctx.restore();
+  // Planet name badge
+  ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(pvx, pvy + pvh - 18, pvw, 18);
+  ctx.fillStyle = th.decorColor; ctx.font = '10px "Share Tech Mono", monospace'; ctx.textAlign = 'center';
+  ctx.fillText(th.name, 400, pvy + pvh - 5);
 
   const sy = 260; ctx.textAlign = 'left'; ctx.font = '13px "Share Tech Mono", monospace';
   ctx.fillStyle = '#777'; ctx.fillText('Загроза:', 220, sy);
@@ -614,24 +685,95 @@ function runLand(dt) {
   canvas.style.cursor = 'none'; land.t += dt;
   const m = getMissionData(save.missionNumber);
   const th = PLANET_THEMES[m.planet] || PLANET_THEMES.forest;
-  ctx.fillStyle = '#020206'; ctx.fillRect(0, 0, 800, 600);
-  for (let i = 0; i < 60; i++) { ctx.fillStyle = '#fff'; ctx.globalAlpha = 0.1 + (i % 4) * 0.04;
-    ctx.fillRect((i * 137) % 800, (i * 251 + land.t * 60) % 600, 1, 1); }
-  ctx.globalAlpha = 1;
+
+  // Space background
+  ATM.renderSky(ctx, m.planet, 800, 600);
+  ATM.renderStars(ctx, gt + land.t * 2, 0, land.t * 80, 800, 600);
+  ATM.renderNebulae(ctx, m.planet, gt, 800, 600);
+
   if (land.t < 1.8) {
     const p = land.t / 1.8;
-    ctx.fillStyle = th.ground;
-    ctx.beginPath(); ctx.arc(400, 600 + 220 - p * 360, 170 + p * 130, 0, Math.PI * 2); ctx.fill();
-    ctx.save(); ctx.translate(400, 70 + p * 200); drawShipSprite(ctx, gt); ctx.restore();
-    ctx.fillStyle = '#0ff'; ctx.font = '13px "Share Tech Mono", monospace'; ctx.textAlign = 'center';
-    ctx.fillText('НАБЛИЖЕННЯ...', 400, 42);
+
+    // Planet growing from below with atmosphere ring
+    const planetR = 170 + p * 150;
+    const planetY = 600 + 250 - p * 400;
+
+    // Atmosphere glow
+    ctx.save();
+    ctx.globalAlpha = 0.15 + p * 0.1;
+    const atmoG = ctx.createRadialGradient(400, planetY, planetR, 400, planetY, planetR + 30);
+    atmoG.addColorStop(0, th.accent);
+    atmoG.addColorStop(0.5, th.decorColor + '44');
+    atmoG.addColorStop(1, 'transparent');
+    ctx.fillStyle = atmoG;
+    ctx.beginPath(); ctx.arc(400, planetY, planetR + 30, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+
+    // Planet body
+    const plG = ctx.createRadialGradient(380, planetY - planetR * 0.3, planetR * 0.1, 400, planetY, planetR);
+    plG.addColorStop(0, th.groundDetail);
+    plG.addColorStop(0.7, th.ground);
+    plG.addColorStop(1, '#000');
+    ctx.fillStyle = plG;
+    ctx.beginPath(); ctx.arc(400, planetY, planetR, 0, Math.PI * 2); ctx.fill();
+
+    // Ship with fire trail
+    const shipY = 60 + p * 220;
+    // Entry trail
+    if (p > 0.3) {
+      ctx.save();
+      ctx.globalAlpha = 0.15 * (p - 0.3);
+      ctx.strokeStyle = '#f80';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(400, shipY + 20);
+      ctx.lineTo(400, Math.max(0, shipY - 100));
+      ctx.stroke();
+      ctx.restore();
+    }
+    ctx.save(); ctx.translate(400, shipY); drawShipSprite(ctx, gt); ctx.restore();
+
+    // HUD text
+    ctx.save();
+    ctx.fillStyle = '#0ff'; ctx.shadowColor = '#0ff'; ctx.shadowBlur = 5;
+    ctx.font = '13px "Share Tech Mono", monospace'; ctx.textAlign = 'center';
+    ctx.fillText('НАБЛИЖЕННЯ...', 400, 38);
+    // Distance indicator
+    ctx.fillStyle = '#088'; ctx.shadowBlur = 0;
+    ctx.font = '10px "Share Tech Mono", monospace';
+    ctx.fillText(`Відстань: ${Math.ceil((1 - p) * 4200)} км`, 400, 55);
+    ctx.restore();
+
   } else if (land.t < 3) {
     const p = (land.t - 1.8) / 1.2;
-    ctx.fillStyle = th.ground; ctx.fillRect(0, 0, 800, 600);
-    if (p < 0.35) { ctx.fillStyle = '#fff'; ctx.globalAlpha = (1 - p / 0.35) * 0.4; ctx.fillRect(0, 0, 800, 600); ctx.globalAlpha = 1; }
-    if (p < 0.5) FX.shake(6, 0.05);
-    ctx.fillStyle = '#0ff'; ctx.font = '16px "Orbitron", sans-serif'; ctx.textAlign = 'center'; ctx.fillText('ВХІД В АТМОСФЕРУ', 400, 300);
+    // Ground view
+    ATM.renderSky(ctx, m.planet, 800, 600);
+    ctx.fillStyle = th.ground; ctx.fillRect(0, 200, 800, 400);
+    // Horizon line
+    const hzG = ctx.createLinearGradient(0, 180, 0, 250);
+    hzG.addColorStop(0, th.accent); hzG.addColorStop(1, th.ground);
+    ctx.fillStyle = hzG; ctx.fillRect(0, 180, 800, 70);
+
+    // Flash on entry
+    if (p < 0.35) {
+      ctx.fillStyle = '#fff'; ctx.globalAlpha = (1 - p / 0.35) * 0.5;
+      ctx.fillRect(0, 0, 800, 600); ctx.globalAlpha = 1;
+    }
+    if (p < 0.5) FX.shake(8, 0.05);
+
+    // Text with glow
+    ctx.save();
+    ctx.fillStyle = '#0ff'; ctx.shadowColor = '#0ff'; ctx.shadowBlur = 10;
+    ctx.font = '18px "Orbitron", sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('ВХІД В АТМОСФЕРУ', 400, 300);
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#088'; ctx.font = '11px "Share Tech Mono", monospace';
+    ctx.fillText(th.name, 400, 325);
+    ctx.restore();
+
   } else { huntInit(); S = 6; }
+
+  ATM.renderVignette(ctx, 800, 600);
 }
 
 // ============================================
@@ -925,6 +1067,9 @@ function renderHunt() {
   // Parallax stars behind everything
   ATM.renderStars(ctx, gt, camX, camY, 800, 600);
 
+  // Nebulae in background
+  ATM.renderNebulae(ctx, planet, gt, 800, 600);
+
   ctx.save(); ctx.translate(-camX + sk.x, -camY + sk.y);
 
   // Ground base
@@ -1037,6 +1182,9 @@ function renderHunt() {
 
   // Fog layer (world space, on top of everything)
   ATM.renderFog(ctx, planet, gt, H.mw, H.mh);
+
+  // Horizon glow at map edges
+  ATM.renderHorizon(ctx, planet, H.mw, H.mh);
 
   ctx.restore();
 
