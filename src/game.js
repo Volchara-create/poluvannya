@@ -17,6 +17,7 @@ import { createNewSave, saves, save, loadSaves, setSlot, saveToDisk,
 import { TypeWriter } from './typewriter.js';
 import { updateGlitches, renderGlitchEffects, triggerGlitch, isControlsInverted } from './glitch.js';
 import * as ATM from './atmosphere.js';
+import * as SPR from './sprites.js';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -691,19 +692,20 @@ function runShip(dt) {
 
 // Ship sprite (drawn here since it's unique)
 function drawShipSprite(ctx, t) {
-  ctx.fillStyle = '#0a3a4a'; ctx.fillRect(-8, -20, 16, 30);
-  ctx.fillStyle = '#0a5a6a'; ctx.fillRect(-6, -26, 12, 8); ctx.fillRect(-4, -30, 8, 5); ctx.fillRect(-2, -32, 4, 3);
-  ctx.fillStyle = '#085858'; ctx.fillRect(-20, -4, 12, 16); ctx.fillRect(8, -4, 12, 16);
-  ctx.fillStyle = '#0a6a6a'; ctx.fillRect(-18, -2, 8, 4); ctx.fillRect(10, -2, 8, 4);
-  ctx.fillStyle = '#f00'; ctx.fillRect(-20, 2, 3, 3); ctx.fillRect(17, 2, 3, 3);
-  ctx.fillStyle = '#0ff'; ctx.shadowColor = '#0ff'; ctx.shadowBlur = 4;
-  ctx.fillRect(-4, -24, 8, 6); ctx.fillStyle = '#088'; ctx.fillRect(-3, -23, 6, 4); ctx.shadowBlur = 0;
-  ctx.strokeStyle = '#0aa'; ctx.lineWidth = 1; ctx.strokeRect(-8, -20, 16, 30);
+  const sprite = SPR.getShip();
+  ctx.drawImage(sprite, -sprite.width / 2, -sprite.height / 2);
+  // Engine flames (dynamic)
   ctx.fillStyle = '#f80'; ctx.globalAlpha = 0.6 + Math.random() * 0.3;
-  const f = 6 + Math.random() * 10;
-  ctx.fillRect(-6, 10, 4, f); ctx.fillRect(2, 10, 4, f);
+  const f = 6 + Math.random() * 12;
+  ctx.beginPath(); ctx.moveTo(-5, sprite.height / 2 - 4);
+  ctx.lineTo(-3, sprite.height / 2 + f); ctx.lineTo(-1, sprite.height / 2 - 4); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(1, sprite.height / 2 - 4);
+  ctx.lineTo(3, sprite.height / 2 + f); ctx.lineTo(5, sprite.height / 2 - 4); ctx.fill();
   ctx.fillStyle = '#ff0'; ctx.globalAlpha = 0.3 + Math.random() * 0.3;
-  ctx.fillRect(-5, 12, 2, f - 3); ctx.fillRect(3, 12, 2, f - 3);
+  ctx.beginPath(); ctx.moveTo(-4, sprite.height / 2 - 2);
+  ctx.lineTo(-3, sprite.height / 2 + f * 0.6); ctx.lineTo(-2, sprite.height / 2 - 2); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(2, sprite.height / 2 - 2);
+  ctx.lineTo(3, sprite.height / 2 + f * 0.6); ctx.lineTo(4, sprite.height / 2 - 2); ctx.fill();
   ctx.globalAlpha = 1;
 }
 
